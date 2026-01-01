@@ -1,0 +1,18 @@
+{
+    "name": "distitrack-monorepo",
+    "private": true,
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "scripts": {
+        "web:dev": "npm run dev --workspace=@distitrack/web",
+        "mobile:start": "npm run start --workspace=@distitrack/mobile"
+    },
+    "devDependencies": {
+        "@types/node": "^25.0.3",
+        "@types/prop-types": "^15.7.15",
+        "@types/react": "^19.2.7",
+        "@types/react-dom": "^19.2.3"
+    }
+}

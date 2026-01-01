@@ -42,7 +42,9 @@ export const Records: React.FC = () => {
             body: filteredEntries.map(e => [e.sana, e.marketNomi, e.marketRaqami, e.mahsulotTuri, e.miqdori, e.tolovHolati]),
             styles: { font: 'helvetica', fontSize: 10 },
         });
-        doc.save(`bozor_daftari_${new Date().toLocaleDateString()}.pdf`);
+        const today = new Date();
+        const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        doc.save(`bozor_daftari_${dateStr}.pdf`);
     };
 
     const exportToExcel = () => {
@@ -56,7 +58,9 @@ export const Records: React.FC = () => {
         })));
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Yozuvlar");
-        XLSX.writeFile(wb, `bozor_daftari_${new Date().toLocaleDateString()}.xlsx`);
+        const today = new Date();
+        const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        XLSX.writeFile(wb, `bozor_daftari_${dateStr}.xlsx`);
     };
 
     return (
@@ -219,10 +223,10 @@ export const Records: React.FC = () => {
                                         <div className="bg-slate-50 dark:bg-slate-700/50 px-3 sm:px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700/50 col-span-2 sm:col-span-1 flex flex-col justify-center">
                                             <span className="text-[10px] text-slate-400 block uppercase font-black tracking-wider mb-1">Holati</span>
                                             <span className={`text-[10px] sm:text-xs font-black uppercase tracking-tight py-1 px-2 rounded-lg text-center ${entry.tolovHolati === 'to\'langan'
-                                                    ? 'bg-emerald-500/10 text-emerald-500'
-                                                    : entry.tolovHolati === 'kutilmoqda'
-                                                        ? 'bg-amber-500/10 text-amber-500'
-                                                        : 'bg-red-500/10 text-red-500'
+                                                ? 'bg-emerald-500/10 text-emerald-500'
+                                                : entry.tolovHolati === 'kutilmoqda'
+                                                    ? 'bg-amber-500/10 text-amber-500'
+                                                    : 'bg-red-500/10 text-red-500'
                                                 }`}>
                                                 {entry.tolovHolati}
                                             </span>

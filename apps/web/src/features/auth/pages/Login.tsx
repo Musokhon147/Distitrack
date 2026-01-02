@@ -7,7 +7,7 @@ export const Login: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, isAuthenticated } = useAuth();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -16,9 +16,16 @@ export const Login: React.FC = () => {
         setTimeout(() => {
             setIsLoading(false);
             login();
-            navigate('/');
+            navigate('/dashboard');
         }, 1500);
     };
+
+    // Auto-redirect if already authenticated
+    React.useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/dashboard');
+        }
+    }, [isAuthenticated, navigate]);
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center p-4">

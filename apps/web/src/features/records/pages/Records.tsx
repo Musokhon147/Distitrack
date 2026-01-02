@@ -23,7 +23,7 @@ export const Records: React.FC = () => {
 
     // Calculate overall sum of product prices
     const totalSum = filteredEntries.reduce((sum, entry) => {
-        const price = parseFloat(entry.narx) || 0;
+        const price = parseFloat(unformatNumber(entry.narx || '0')) || 0;
         return sum + price;
     }, 0);
 
@@ -37,6 +37,16 @@ export const Records: React.FC = () => {
             updateEntry(editingId, editForm);
             setEditingId(null);
         }
+    };
+
+    const formatNumber = (val: string | number) => {
+        if (!val) return '';
+        const num = typeof val === 'string' ? val.replace(/\D/g, '') : val.toString();
+        return new Intl.NumberFormat('en-US').format(parseFloat(num) || 0);
+    };
+
+    const unformatNumber = (val: string) => {
+        return val.replace(/,/g, '');
     };
 
     const exportToPDF = () => {
@@ -76,7 +86,7 @@ export const Records: React.FC = () => {
                 <div>
                     <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
                         <History className="text-blue-600" size={32} />
-                        Yozuvlar tarixi
+                        Tarix
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Qaysi do'konga nima yuborilgani haqida to'liq ma'lumot</p>
                 </div>
@@ -180,8 +190,8 @@ export const Records: React.FC = () => {
                                             />
                                             <input
                                                 className="p-3 border rounded-xl dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
-                                                value={editForm.narx}
-                                                onChange={(e) => setEditForm({ ...editForm, narx: e.target.value })}
+                                                value={formatNumber(editForm.narx || '')}
+                                                onChange={(e) => setEditForm({ ...editForm, narx: unformatNumber(e.target.value) })}
                                                 placeholder="Narx"
                                             />
                                             <select
@@ -236,7 +246,7 @@ export const Records: React.FC = () => {
                                             </div>
                                             <div className="bg-emerald-50 dark:bg-emerald-900/20 px-3 sm:px-4 py-2 rounded-xl border border-emerald-200 dark:border-emerald-700/50">
                                                 <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block uppercase font-black tracking-wider mb-1">Narx</span>
-                                                <span className="font-bold text-sm sm:text-base text-emerald-600 dark:text-emerald-400 truncate block">{parseFloat(entry.narx).toLocaleString()} so'm</span>
+                                                <span className="font-bold text-sm sm:text-base text-emerald-600 dark:text-emerald-400 truncate block">{formatNumber(entry.narx)} so'm</span>
                                             </div>
                                             <div className="bg-slate-50 dark:bg-slate-700/50 px-3 sm:px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700/50 col-span-2 sm:col-span-1 flex flex-col justify-center">
                                                 <span className="text-[10px] text-slate-400 block uppercase font-black tracking-wider mb-1">Holati</span>

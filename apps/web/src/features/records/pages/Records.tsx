@@ -14,6 +14,17 @@ export const Records: React.FC = () => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState<Partial<Entry>>({});
 
+    const formatNumber = (val: string | number) => {
+        if (!val) return '';
+        const num = typeof val === 'string' ? val.replace(/\D/g, '') : val.toString();
+        return new Intl.NumberFormat('en-US').format(parseFloat(num) || 0);
+    };
+
+    const unformatNumber = (val: string) => {
+        if (typeof val !== 'string') return '';
+        return val.replace(/,/g, '');
+    };
+
     const filteredEntries = entries.filter(entry => {
         const matchesSearch = entry.marketNomi.toLowerCase().includes(searchTerm.toLowerCase()) ||
             entry.mahsulotTuri.toLowerCase().includes(searchTerm.toLowerCase());
@@ -21,11 +32,15 @@ export const Records: React.FC = () => {
         return matchesSearch && matchesStatus;
     });
 
-    // Calculate overall sum of product prices
-    const totalSum = filteredEntries.reduce((sum, entry) => {
+    // Calculate overall sum calculations
+    const totals = filteredEntries.reduce((acc, entry) => {
         const price = parseFloat(unformatNumber(entry.narx || '0')) || 0;
-        return sum + price;
-    }, 0);
+        acc.total += price;
+        if (entry.tolovHolati === "to'langan") acc.paid += price;
+        else if (entry.tolovHolati === 'kutilmoqda') acc.pending += price;
+        else acc.unpaid += price;
+        return acc;
+    }, { total: 0, paid: 0, pending: 0, unpaid: 0 });
 
     const handleEditStart = (entry: Entry) => {
         setEditingId(entry.id);
@@ -39,23 +54,15 @@ export const Records: React.FC = () => {
         }
     };
 
-    const formatNumber = (val: string | number) => {
-        if (!val) return '';
-        const num = typeof val === 'string' ? val.replace(/\D/g, '') : val.toString();
-        return new Intl.NumberFormat('en-US').format(parseFloat(num) || 0);
-    };
 
-    const unformatNumber = (val: string) => {
-        return val.replace(/,/g, '');
-    };
 
     const exportToPDF = () => {
         const doc = new jsPDF();
         doc.text("Bo'zor Daftari - Yozuvlar Tarixi", 14, 15);
         autoTable(doc, {
             startY: 20,
-            head: [['Sana', 'Market Nomi', 'Raqam', 'Mahsulot', 'Miqdor', 'Narx', 'Holat']],
-            body: filteredEntries.map(e => [e.sana, e.marketNomi, e.marketRaqami, e.mahsulotTuri, e.miqdori, e.narx, e.tolovHolati]),
+            head: [['Market Nomi', 'Raqam', 'Mahsulot', 'Miqdor', 'Narx', 'Holat']],
+            body: filteredEntries.map(e => [e.marketNomi, e.marketRaqami, e.mahsulotTuri, e.miqdori, e.narx, e.tolovHolati]),
             styles: { font: 'helvetica', fontSize: 10 },
         });
         const today = new Date();
@@ -65,7 +72,6 @@ export const Records: React.FC = () => {
 
     const exportToExcel = () => {
         const ws = XLSX.utils.json_to_sheet(filteredEntries.map(e => ({
-            'Sana': e.sana,
             'Market Nomi': e.marketNomi,
             'Telefon': e.marketRaqami,
             'Mahsulot': e.mahsulotTuri,
@@ -81,7 +87,7 @@ export const Records: React.FC = () => {
     };
 
     return (
-        <div className="max-w-6xl mx-auto p-4 md:p-8 bg-white dark:bg-slate-900 shadow-xl rounded-2xl mt-6 transition-colors duration-200 min-h-[80vh]">
+        <div className="max-w-7xl mx-auto p-4 md:p-8 bg-white dark:bg-slate-900 shadow-xl rounded-2xl mt-6 transition-colors duration-200 min-h-[80vh]">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
@@ -280,24 +286,6 @@ export const Records: React.FC = () => {
                             </div>
                         ))}
 
-                        {/* Overall Sum Summary */}
-                        <div className="mt-6 p-6 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 border-2 border-emerald-200 dark:border-emerald-700/50 rounded-2xl shadow-lg">
-                            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-3 bg-emerald-500 text-white rounded-xl">
-                                        <Calendar size={24} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Umumiy Natija</h3>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">Jami {filteredEntries.length} ta yozuv</p>
-                                    </div>
-                                </div>
-                                <div className="bg-white dark:bg-slate-800 px-6 py-4 rounded-xl border border-emerald-200 dark:border-emerald-700/50 shadow-sm">
-                                    <span className="text-xs text-slate-400 block uppercase font-black tracking-wider mb-1">Jami narx</span>
-                                    <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{totalSum.toLocaleString()} so'm</span>
-                                </div>
-                            </div>
-                        </div>
                     </>
                 )}
             </div>

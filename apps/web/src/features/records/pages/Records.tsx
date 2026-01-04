@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Entry } from '@distitrack/common';
-import { History, Search, Filter, Calendar, Trash2, Edit3, Download, X, Check } from 'lucide-react';
+import { History, Search, Filter, Calendar, Trash2, Edit3, Download, X, Check, ShoppingBag, Package, Hash, CreditCard, ChevronDown } from 'lucide-react';
 import { useEntries } from '../../../hooks/useEntries';
+import { CustomSelect } from '../../../components/ui/CustomSelect';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -33,11 +34,11 @@ export const Records: React.FC = () => {
     });
 
     // Calculate overall sum calculations
+    // Calculate overall sum calculations
     const totals = filteredEntries.reduce((acc, entry) => {
         const price = parseFloat(unformatNumber(entry.narx || '0')) || 0;
         acc.total += price;
         if (entry.tolovHolati === "to'langan") acc.paid += price;
-        else if (entry.tolovHolati === 'kutilmoqda') acc.pending += price;
         else acc.unpaid += price;
         return acc;
     }, { total: 0, paid: 0, pending: 0, unpaid: 0 });
@@ -142,7 +143,7 @@ export const Records: React.FC = () => {
                         {showFilters && (
                             <div className="absolute top-full right-0 mt-2 w-full md:w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-2">To'lov holati</p>
-                                {['Barchasi', 'to\'langan', 'to\'lanmagan', 'kutilmoqda'].map((status) => (
+                                {['Barchasi', 'to\'langan', 'to\'lanmagan'].map((status) => (
                                     <button
                                         key={status}
                                         onClick={() => {
@@ -174,45 +175,97 @@ export const Records: React.FC = () => {
                         {filteredEntries.map(entry => (
                             <div key={entry.id} className="p-4 sm:p-6 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-2xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
                                 {editingId === entry.id ? (
-                                    <div className="w-full space-y-4">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                                            <input
-                                                className="p-3 border rounded-xl dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
-                                                value={editForm.marketNomi}
-                                                onChange={(e) => setEditForm({ ...editForm, marketNomi: e.target.value })}
-                                                placeholder="Market"
-                                            />
-                                            <input
-                                                className="p-3 border rounded-xl dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
-                                                value={editForm.mahsulotTuri}
-                                                onChange={(e) => setEditForm({ ...editForm, mahsulotTuri: e.target.value })}
-                                                placeholder="Mahsulot"
-                                            />
-                                            <input
-                                                className="p-3 border rounded-xl dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
-                                                value={editForm.miqdori}
-                                                onChange={(e) => setEditForm({ ...editForm, miqdori: e.target.value })}
-                                                placeholder="Miqdor"
-                                            />
-                                            <input
-                                                className="p-3 border rounded-xl dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
-                                                value={formatNumber(editForm.narx || '')}
-                                                onChange={(e) => setEditForm({ ...editForm, narx: unformatNumber(e.target.value) })}
-                                                placeholder="Narx"
-                                            />
-                                            <select
-                                                className="p-3 border rounded-xl dark:bg-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
-                                                value={editForm.tolovHolati}
-                                                onChange={(e) => setEditForm({ ...editForm, tolovHolati: e.target.value as any })}
-                                            >
-                                                <option value="to'langan">To'langan</option>
-                                                <option value="to'lanmagan">To'lanmagan</option>
-                                                <option value="kutilmoqda">Kutilmoqda</option>
-                                            </select>
+                                    <div className="w-full space-y-4 bg-slate-50 dark:bg-slate-900/50 p-6 rounded-[2rem] border border-indigo-100 dark:border-indigo-900/30">
+                                        <div className="flex items-center gap-3 mb-2 px-1">
+                                            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                                                <Edit3 size={16} />
+                                            </div>
+                                            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Tahrirlash</h3>
                                         </div>
-                                        <div className="flex justify-end gap-3 pt-2">
-                                            <button onClick={() => setEditingId(null)} className="p-3 bg-slate-100 dark:bg-slate-700 text-slate-500 rounded-xl hover:bg-slate-200 transition-colors"><X size={20} /></button>
-                                            <button onClick={handleEditSave} className="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors shadow-lg"><Check size={20} /></button>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Market</label>
+                                                <div className="relative">
+                                                    <ShoppingBag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                    <input
+                                                        className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium text-slate-700 dark:text-slate-200"
+                                                        value={editForm.marketNomi}
+                                                        onChange={(e) => setEditForm({ ...editForm, marketNomi: e.target.value })}
+                                                        placeholder="Market nomini kiriting"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Mahsulot</label>
+                                                <div className="relative">
+                                                    <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                    <input
+                                                        className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium text-slate-700 dark:text-slate-200"
+                                                        value={editForm.mahsulotTuri}
+                                                        onChange={(e) => setEditForm({ ...editForm, mahsulotTuri: e.target.value })}
+                                                        placeholder="Mahsulot turi"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Telefon</label>
+                                                <div className="relative">
+                                                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                    <input
+                                                        className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium text-slate-700 dark:text-slate-200"
+                                                        value={editForm.marketRaqami}
+                                                        onChange={(e) => setEditForm({ ...editForm, marketRaqami: e.target.value })}
+                                                        placeholder="Telefon raqami"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Miqdori</label>
+                                                <input
+                                                    className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium text-slate-700 dark:text-slate-200"
+                                                    value={editForm.miqdori}
+                                                    onChange={(e) => setEditForm({ ...editForm, miqdori: e.target.value })}
+                                                    placeholder="Miqdori"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Narxi</label>
+                                                <div className="relative">
+                                                    <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500" size={16} />
+                                                    <input
+                                                        className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-bold text-indigo-600 dark:text-indigo-400"
+                                                        value={formatNumber(editForm.narx || '')}
+                                                        onChange={(e) => setEditForm({ ...editForm, narx: unformatNumber(e.target.value) })}
+                                                        placeholder="Narxi"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <CustomSelect
+                                                    label="Holat"
+                                                    value={editForm.tolovHolati || ''}
+                                                    placeholder="Holatni tanlang"
+                                                    onChange={(val) => setEditForm({ ...editForm, tolovHolati: val as any })}
+                                                    options={[
+                                                        { id: '1', value: "to'langan", label: "To'langan" },
+                                                        { id: '2', value: "to'lanmagan", label: "To'lanmagan" }
+                                                    ]}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-3 pt-4">
+                                            <button
+                                                onClick={() => setEditingId(null)}
+                                                className="px-6 py-3 bg-white dark:bg-slate-800 text-slate-500 font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all flex items-center gap-2"
+                                            >
+                                                <X size={18} /> Bekor qilish
+                                            </button>
+                                            <button
+                                                onClick={handleEditSave}
+                                                className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 hover:from-indigo-600 hover:to-indigo-700 transition-all flex items-center gap-2"
+                                            >
+                                                <Check size={18} /> Saqlash
+                                            </button>
                                         </div>
                                     </div>
                                 ) : (

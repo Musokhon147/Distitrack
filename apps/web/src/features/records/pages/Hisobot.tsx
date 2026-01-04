@@ -45,9 +45,6 @@ export const Hisobot: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
                 {/* Main Total Card */}
                 <div className="lg:col-span-3 bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-[32px] text-white shadow-xl shadow-blue-500/20 relative overflow-hidden group">
-                    <div className="absolute right-0 top-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-                        <Wallet size={120} />
-                    </div>
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div>
                             <span className="text-blue-100 text-sm font-black uppercase tracking-widest block mb-1">Umumiy Aylanma Summa</span>
@@ -67,8 +64,8 @@ export const Hisobot: React.FC = () => {
                 <button
                     onClick={() => setSelectedStatus(selectedStatus === "to'langan" ? null : "to'langan")}
                     className={`text-left p-6 rounded-[32px] border flex flex-col justify-between group transition-all duration-300 ${selectedStatus === "to'langan"
-                            ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-500 ring-2 ring-emerald-500 shadow-xl'
-                            : 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800/30 hover:scale-[1.02] hover:shadow-lg'
+                        ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-500 ring-2 ring-emerald-500 shadow-xl'
+                        : 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800/30 hover:scale-[1.02] hover:shadow-lg'
                         }`}
                 >
                     <div className="flex justify-between items-start mb-4 w-full">
@@ -88,8 +85,8 @@ export const Hisobot: React.FC = () => {
                 <button
                     onClick={() => setSelectedStatus(selectedStatus === "to'lanmagan" ? null : "to'lanmagan")}
                     className={`text-left p-6 rounded-[32px] border flex flex-col justify-between group transition-all duration-300 ${selectedStatus === "to'lanmagan"
-                            ? 'bg-red-100 dark:bg-red-900/30 border-red-500 ring-2 ring-red-500 shadow-xl'
-                            : 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-800/30 hover:scale-[1.02] hover:shadow-lg'
+                        ? 'bg-red-100 dark:bg-red-900/30 border-red-500 ring-2 ring-red-500 shadow-xl'
+                        : 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-800/30 hover:scale-[1.02] hover:shadow-lg'
                         }`}
                 >
                     <div className="flex justify-between items-start mb-4 w-full">

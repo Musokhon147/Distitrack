@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
@@ -7,30 +7,29 @@ import { supabase } from '../../../lib/supabase';
 export const Login: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
-    const { login, isAuthenticated } = useAuth();
+    const { isAuthenticated } = useAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
+        setError(null);
 
-        // Get email and password from form (need to adding ref or name attribute to inputs first, or control inputs)
-        // Since inputs are not controlled, let's use FormEvent target
-        const form = e.target as HTMLFormElement;
-        const email = (form.elements.namedItem('email') as HTMLInputElement).value;
-        const password = (form.elements.namedItem('password') as HTMLInputElement).value;
+        try {
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-
-        setIsLoading(false);
-
-        if (error) {
-            alert(error.message); // Simple error handling for now
-        } else {
-            navigate('/');
+            if (error) throw error;
+            navigate('/dashboard');
+        } catch (err: any) {
+            setError(err.message || 'An error occurred during login');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -47,10 +46,10 @@ export const Login: React.FC = () => {
                 {/* Logo or Brand Name */}
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 mb-4 animate-bounce-subtle">
-                        <LogIn size={32} />
+                        <User size={32} />
                     </div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        Xush kelibsiz!
+                        Xush kelibsiz
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400 mt-2">
                         Tizimga kirish uchun ma'lumotlaringizni kiriting
@@ -59,19 +58,25 @@ export const Login: React.FC = () => {
 
                 {/* Login Card */}
                 <div className="glass-card rounded-3xl p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {error && (
+                            <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/10 rounded-lg">
+                                {error}
+                            </div>
+                        )}
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1">
                                 Email yoki Login
                             </label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500 transition-colors">
-                                    <Mail size={18} />
+                                    <User size={18} />
                                 </div>
                                 <input
-                                    name="email"
                                     type="text"
                                     required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
                                     placeholder="example@mail.com"
                                 />
@@ -83,7 +88,7 @@ export const Login: React.FC = () => {
                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                     Parol
                                 </label>
-                                <a href="#" className="text-xs font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+                                <a href="#" className="text-xs font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
                                     Parolni unutdingizmi?
                                 </a>
                             </div>
@@ -92,9 +97,10 @@ export const Login: React.FC = () => {
                                     <Lock size={18} />
                                 </div>
                                 <input
-                                    name="password"
                                     type={showPassword ? "text" : "password"}
                                     required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
                                     placeholder="••••••••"
                                 />
@@ -106,17 +112,6 @@ export const Login: React.FC = () => {
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
                             </div>
-                        </div>
-
-                        <div className="flex items-center">
-                            <input
-                                id="remember-me"
-                                type="checkbox"
-                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded cursor-pointer"
-                            />
-                            <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
-                                Meni eslab qol
-                            </label>
                         </div>
 
                         <button

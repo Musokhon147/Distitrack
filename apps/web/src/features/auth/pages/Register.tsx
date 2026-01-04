@@ -7,38 +7,43 @@ import { supabase } from '../../../lib/supabase';
 export const Register: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [fullName, setFullName] = useState('');
+    const [error, setError] = useState<string | null>(null);
+
     const navigate = useNavigate();
-    const { login, isAuthenticated } = useAuth();
+    const { isAuthenticated } = useAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        const form = e.target as HTMLFormElement;
-        const fullName = (form.elements.namedItem('fullName') as HTMLInputElement).value;
-        const email = (form.elements.namedItem('email') as HTMLInputElement).value;
-        const password = (form.elements.namedItem('password') as HTMLInputElement).value;
+        setError(null);
 
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    full_name: fullName,
+        try {
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: fullName,
+                    },
                 },
-            },
-        });
+            });
 
-        setIsLoading(false);
+            if (error) throw error;
 
-        if (error) {
-            alert(error.message);
-        } else {
-            // Supabase handles session automatically if email confirmation is disabled or on same device, 
-            // but usually requires checking if session exists. 
-            // For simplify, we assume successful signup logs in or prompts verification.
-            alert('Registration successful! Please check your email for verification if needed, or login.');
-            login(); // Context update will happen via subscription, this call is mostly placeholder
-            navigate('/');
+            if (data.session) {
+                navigate('/dashboard');
+            } else {
+                // Determine if email confirmation is required
+                alert('Registration successful! Please check your email for confirmation (if configured).');
+                navigate('/login');
+            }
+        } catch (err: any) {
+            setError(err.message || 'An error occurred during registration');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -68,6 +73,11 @@ export const Register: React.FC = () => {
                 {/* Register Card */}
                 <div className="glass-card rounded-3xl p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10">
                     <form onSubmit={handleSubmit} className="space-y-5">
+                        {error && (
+                            <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/10 rounded-lg">
+                                {error}
+                            </div>
+                        )}
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1">
                                 To'liq ismingiz
@@ -77,9 +87,10 @@ export const Register: React.FC = () => {
                                     <User size={18} />
                                 </div>
                                 <input
-                                    name="fullName"
                                     type="text"
                                     required
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
                                     className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
                                     placeholder="Ism Familiya"
                                 />
@@ -88,16 +99,17 @@ export const Register: React.FC = () => {
 
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1">
-                                Email yoki Login
+                                Email
                             </label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500 transition-colors">
                                     <Mail size={18} />
                                 </div>
                                 <input
-                                    name="email"
-                                    type="text"
+                                    type="email"
                                     required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
                                     placeholder="example@mail.com"
                                 />
@@ -113,9 +125,10 @@ export const Register: React.FC = () => {
                                     <Lock size={18} />
                                 </div>
                                 <input
-                                    name="password"
                                     type={showPassword ? "text" : "password"}
                                     required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
                                     placeholder="••••••••"
                                 />

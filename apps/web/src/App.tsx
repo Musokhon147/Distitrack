@@ -47,6 +47,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
 }
 
+import { AnimatePresence } from 'framer-motion';
 import { LoadingScreen } from './components/ui/LoadingScreen';
 
 function AppContent() {
@@ -62,70 +63,72 @@ function AppContent() {
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
             {!isAuthPage && <Navbar />}
             <main className={!isAuthPage ? "py-6 md:py-10 px-4 md:px-8" : ""}>
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route
-                        path="/"
-                        element={
-                            isAuthenticated ? (
-                                <Navigate to="/dashboard" replace />
-                            ) : (
-                                <Navigate to="/login" replace />
-                            )
-                        }
-                    />
-                    <Route
-                        path="/dashboard"
-                        element={
-                            <ProtectedRoute>
-                                <SimplifiedDashboard />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/records"
-                        element={
-                            <ProtectedRoute>
-                                <Records />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/hisobot"
-                        element={
-                            <ProtectedRoute>
-                                <Hisobot />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/markets"
-                        element={
-                            <ProtectedRoute>
-                                <Markets />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/products"
-                        element={
-                            <ProtectedRoute>
-                                <Products />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/profile"
-                        element={
-                            <ProtectedRoute>
-                                <Profile />
-                            </ProtectedRoute>
-                        }
-                    />
-                </Routes>
+                <AnimatePresence mode="wait">
+                    <Routes location={location} key={location.pathname}>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
+                        <Route
+                            path="/"
+                            element={
+                                isAuthenticated ? (
+                                    <Navigate to="/dashboard" replace />
+                                ) : (
+                                    <Navigate to="/login" replace />
+                                )
+                            }
+                        />
+                        <Route
+                            path="/dashboard"
+                            element={
+                                <ProtectedRoute>
+                                    <SimplifiedDashboard />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/records"
+                            element={
+                                <ProtectedRoute>
+                                    <Records />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/hisobot"
+                            element={
+                                <ProtectedRoute>
+                                    <Hisobot />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/markets"
+                            element={
+                                <ProtectedRoute>
+                                    <Markets />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/products"
+                            element={
+                                <ProtectedRoute>
+                                    <Products />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/profile"
+                            element={
+                                <ProtectedRoute>
+                                    <Profile />
+                                </ProtectedRoute>
+                            }
+                        />
+                    </Routes>
+                </AnimatePresence>
             </main>
         </div>
     );

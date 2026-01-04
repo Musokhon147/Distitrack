@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 
 interface EntryContextType {
     entries: Entry[];
+    loading: boolean;
     addEntry: (entry: Omit<Entry, 'id' | 'sana'>) => Promise<void>;
     updateEntry: (id: string, updatedEntry: Partial<Entry>) => Promise<void>;
     deleteEntry: (id: string) => Promise<void>;
@@ -14,6 +15,7 @@ const EntryContext = createContext<EntryContextType | undefined>(undefined);
 
 export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [entries, setEntries] = useState<Entry[]>([]);
+    const [loading, setLoading] = useState(true);
     const { user } = useAuth();
 
     useEffect(() => {
@@ -21,10 +23,12 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             fetchEntries();
         } else {
             setEntries([]);
+            setLoading(false);
         }
     }, [user]);
 
     const fetchEntries = async () => {
+        setLoading(true);
         const { data, error } = await supabase
             .from('entries')
             .select('*')
@@ -47,6 +51,7 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             }));
             setEntries(mappedEntries);
         }
+        setLoading(false);
     };
 
     const addEntry = async (entry: Omit<Entry, 'id' | 'sana'>) => {
@@ -131,7 +136,7 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     return (
-        <EntryContext.Provider value={{ entries, addEntry, updateEntry, deleteEntry }}>
+        <EntryContext.Provider value={{ entries, loading, addEntry, updateEntry, deleteEntry }}>
             {children}
         </EntryContext.Provider>
     );

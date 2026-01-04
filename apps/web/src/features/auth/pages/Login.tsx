@@ -3,31 +3,43 @@ import { User, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
+
+const loginSchema = z.object({
+    email: z.string().email('Noto\'g\'ri email formati'),
+    password: z.string().min(6, 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak'),
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
 
 export const Login: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState<string | null>(null);
+
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setError(null);
+    const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
+        resolver: zodResolver(loginSchema),
+    });
 
+    const onSubmit = async (data: LoginForm) => {
+        setIsLoading(true);
         try {
             const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
+                email: data.email,
+                password: data.password,
             });
 
             if (error) throw error;
+
+            toast.success('Tizimga muvaffaqiyatli kirdingiz');
             navigate('/dashboard');
         } catch (err: any) {
-            setError(err.message || 'An error occurred during login');
+            toast.error(err.message || 'Kirishda xatolik yuz berdi');
         } finally {
             setIsLoading(false);
         }
@@ -58,12 +70,7 @@ export const Login: React.FC = () => {
 
                 {/* Login Card */}
                 <div className="glass-card rounded-3xl p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10">
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {error && (
-                            <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/10 rounded-lg">
-                                {error}
-                            </div>
-                        )}
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1">
                                 Email yoki Login
@@ -73,14 +80,15 @@ export const Login: React.FC = () => {
                                     <User size={18} />
                                 </div>
                                 <input
+                                    {...register('email')}
                                     type="text"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
+                                    className={`w-full pl-11 pr-4 py-3 bg-slate-50 border ${errors.email ? 'border-red-500' : 'border-slate-200'} dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white`}
                                     placeholder="example@mail.com"
                                 />
                             </div>
+                            {errors.email && (
+                                <p className="text-xs text-red-500 ml-1">{errors.email.message}</p>
+                            )}
                         </div>
 
                         <div className="space-y-2">
@@ -97,11 +105,9 @@ export const Login: React.FC = () => {
                                     <Lock size={18} />
                                 </div>
                                 <input
+                                    {...register('password')}
                                     type={showPassword ? "text" : "password"}
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
+                                    className={`w-full pl-11 pr-12 py-3 bg-slate-50 border ${errors.password ? 'border-red-500' : 'border-slate-200'} dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white`}
                                     placeholder="••••••••"
                                 />
                                 <button
@@ -112,6 +118,9 @@ export const Login: React.FC = () => {
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
                             </div>
+                            {errors.password && (
+                                <p className="text-xs text-red-500 ml-1">{errors.password.message}</p>
+                            )}
                         </div>
 
                         <button

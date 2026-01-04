@@ -11,6 +11,7 @@
     },
     "dependencies": {
         "@distitrack/common": "*",
+        "@hookform/resolvers": "^5.2.2",
         "@supabase/supabase-js": "^2.89.0",
         "clsx": "^2.1.1",
         "jspdf": "^3.0.4",
@@ -18,10 +19,13 @@
         "lucide-react": "^0.378.0",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
+        "react-hook-form": "^7.70.0",
         "react-router-dom": "^6.23.1",
+        "sonner": "^2.0.7",
         "tailwind-merge": "^2.3.0",
         "vite-plugin-pwa": "^0.20.0",
-        "xlsx": "^0.18.5"
+        "xlsx": "^0.18.5",
+        "zod": "^4.3.4"
     },
     "devDependencies": {
         "@types/react": "^19.0.0",

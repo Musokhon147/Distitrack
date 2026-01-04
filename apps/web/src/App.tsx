@@ -11,9 +11,12 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
 
+import { Toaster } from 'sonner';
+
 function App() {
     return (
         <ThemeProvider>
+            <Toaster position="top-center" richColors />
             <AuthProvider>
                 <EntryProvider>
                     <BrowserRouter>
@@ -33,10 +36,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
 }
 
+import { LoadingScreen } from './components/ui/LoadingScreen';
+
 function AppContent() {
     const location = useLocation();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, loading } = useAuth();
     const isAuthPage = ['/login', '/register'].includes(location.pathname);
+
+    if (loading) {
+        return <LoadingScreen />;
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200">

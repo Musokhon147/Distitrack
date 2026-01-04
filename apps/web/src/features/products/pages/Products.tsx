@@ -62,12 +62,12 @@ export const Products: React.FC = () => {
                             </h2>
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1 mb-1 block">Mahsulot Nomi</label>
+                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1 mb-1 block">Mahsulot Turi</label>
                                     <div className="relative">
                                         <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                         <input
                                             type="text"
-                                            placeholder="Masalan: Un, Yog', Shakar"
+                                            placeholder="Masalan: Telefon, Maishiy texnika"
                                             className="w-full pl-11 pr-4 py-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none dark:text-white transition-all font-medium"
                                             value={newProduct.name}
                                             onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}

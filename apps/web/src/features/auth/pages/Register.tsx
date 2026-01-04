@@ -218,7 +218,7 @@ export const Register: React.FC = () => {
                                         onChange={(e) => setOtpCode(e.target.value)}
                                         className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white tracking-widest text-center text-lg font-mono"
                                         placeholder="123456"
-                                        maxLength={6}
+                                        maxLength={10}
                                     />
                                 </div>
                             </div>

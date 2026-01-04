@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserPlus, Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import { supabase } from '../../../lib/supabase';
 
 export const Register: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -9,15 +10,36 @@ export const Register: React.FC = () => {
     const navigate = useNavigate();
     const { login, isAuthenticated } = useAuth();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        // Simulate registration
-        setTimeout(() => {
-            setIsLoading(false);
-            login(); // Log in automatically after registration
-            navigate('/dashboard');
-        }, 1500);
+        const form = e.target as HTMLFormElement;
+        const fullName = (form.elements.namedItem('fullName') as HTMLInputElement).value;
+        const email = (form.elements.namedItem('email') as HTMLInputElement).value;
+        const password = (form.elements.namedItem('password') as HTMLInputElement).value;
+
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: fullName,
+                },
+            },
+        });
+
+        setIsLoading(false);
+
+        if (error) {
+            alert(error.message);
+        } else {
+            // Supabase handles session automatically if email confirmation is disabled or on same device, 
+            // but usually requires checking if session exists. 
+            // For simplify, we assume successful signup logs in or prompts verification.
+            alert('Registration successful! Please check your email for verification if needed, or login.');
+            login(); // Context update will happen via subscription, this call is mostly placeholder
+            navigate('/');
+        }
     };
 
     // Auto-redirect if already authenticated
@@ -55,6 +77,7 @@ export const Register: React.FC = () => {
                                     <User size={18} />
                                 </div>
                                 <input
+                                    name="fullName"
                                     type="text"
                                     required
                                     className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
@@ -72,6 +95,7 @@ export const Register: React.FC = () => {
                                     <Mail size={18} />
                                 </div>
                                 <input
+                                    name="email"
                                     type="text"
                                     required
                                     className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
@@ -89,6 +113,7 @@ export const Register: React.FC = () => {
                                     <Lock size={18} />
                                 </div>
                                 <input
+                                    name="password"
                                     type={showPassword ? "text" : "password"}
                                     required
                                     className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"

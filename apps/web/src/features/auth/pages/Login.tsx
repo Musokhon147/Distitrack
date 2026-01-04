@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LogIn, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import { supabase } from '../../../lib/supabase';
 
 export const Login: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -9,15 +10,28 @@ export const Login: React.FC = () => {
     const navigate = useNavigate();
     const { login, isAuthenticated } = useAuth();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        // Simulate login
-        setTimeout(() => {
-            setIsLoading(false);
-            login();
-            navigate('/dashboard');
-        }, 1500);
+
+        // Get email and password from form (need to adding ref or name attribute to inputs first, or control inputs)
+        // Since inputs are not controlled, let's use FormEvent target
+        const form = e.target as HTMLFormElement;
+        const email = (form.elements.namedItem('email') as HTMLInputElement).value;
+        const password = (form.elements.namedItem('password') as HTMLInputElement).value;
+
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        setIsLoading(false);
+
+        if (error) {
+            alert(error.message); // Simple error handling for now
+        } else {
+            navigate('/');
+        }
     };
 
     // Auto-redirect if already authenticated
@@ -55,6 +69,7 @@ export const Login: React.FC = () => {
                                     <Mail size={18} />
                                 </div>
                                 <input
+                                    name="email"
                                     type="text"
                                     required
                                     className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"
@@ -77,6 +92,7 @@ export const Login: React.FC = () => {
                                     <Lock size={18} />
                                 </div>
                                 <input
+                                    name="password"
                                     type={showPassword ? "text" : "password"}
                                     required
                                     className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white"

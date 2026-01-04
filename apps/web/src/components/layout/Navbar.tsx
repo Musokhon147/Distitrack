@@ -1,10 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
-import { Book, History, PieChart, Moon, Sun } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { Book, History, PieChart, Moon, Sun, LogOut } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
     const { isDark, toggleTheme } = useTheme();
+    const { logout } = useAuth();
 
     return (
         <nav className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-50 transition-colors">
@@ -12,7 +14,7 @@ export const Navbar: React.FC = () => {
                 <div className="flex justify-between items-center h-20">
                     <div className="flex items-center gap-4 sm:gap-10">
                         <NavLink
-                            to="/"
+                            to="/dashboard"
                             className={({ isActive }) => `
                             flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base sm:text-lg
                             ${isActive
@@ -49,13 +51,22 @@ export const Navbar: React.FC = () => {
                         </NavLink>
                     </div>
 
-                    <button
-                        onClick={toggleTheme}
-                        className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-yellow-400 hover:scale-110 transition-transform shadow-sm"
-                        title={isDark ? "Yorug' rejimga o'tish" : "Tungi rejimga o'tish"}
-                    >
-                        {isDark ? <Sun size={24} /> : <Moon size={24} />}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={toggleTheme}
+                            className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-yellow-400 hover:scale-110 transition-transform shadow-sm"
+                            title={isDark ? "Yorug' rejimga o'tish" : "Tungi rejimga o'tish"}
+                        >
+                            {isDark ? <Sun size={24} /> : <Moon size={24} />}
+                        </button>
+                        <button
+                            onClick={logout}
+                            className="p-3 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:scale-110 transition-transform shadow-sm"
+                            title="Tizimdan chiqish"
+                        >
+                            <LogOut size={24} />
+                        </button>
+                    </div>
                 </div>
             </div>
         </nav>

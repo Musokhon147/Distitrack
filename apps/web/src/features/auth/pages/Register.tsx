@@ -8,12 +8,11 @@ export const Register: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, isAuthenticated } = useAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-
         const form = e.target as HTMLFormElement;
         const fullName = (form.elements.namedItem('fullName') as HTMLInputElement).value;
         const email = (form.elements.namedItem('email') as HTMLInputElement).value;
@@ -42,6 +41,13 @@ export const Register: React.FC = () => {
             navigate('/');
         }
     };
+
+    // Auto-redirect if already authenticated
+    React.useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/dashboard');
+        }
+    }, [isAuthenticated, navigate]);
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center p-4">

@@ -35,6 +35,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppContent() {
     const location = useLocation();
+    const { isAuthenticated } = useAuth();
     const isAuthPage = ['/login', '/register'].includes(location.pathname);
 
     return (
@@ -46,6 +47,16 @@ function AppContent() {
                     <Route path="/register" element={<Register />} />
                     <Route
                         path="/"
+                        element={
+                            isAuthenticated ? (
+                                <Navigate to="/dashboard" replace />
+                            ) : (
+                                <Navigate to="/login" replace />
+                            )
+                        }
+                    />
+                    <Route
+                        path="/dashboard"
                         element={
                             <ProtectedRoute>
                                 <SimplifiedDashboard />

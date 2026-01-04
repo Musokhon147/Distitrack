@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useEntries } from '../../../hooks/useEntries';
-import { Check } from 'lucide-react';
+import { Check, PlusCircle, ShoppingBag, Hash, Package, CreditCard, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 export const SimplifiedDashboard: React.FC = () => {
     const { addEntry } = useEntries();
@@ -31,11 +33,11 @@ export const SimplifiedDashboard: React.FC = () => {
         return val.replace(/,/g, '');
     };
 
-
-
     const handleSubmit = () => {
         if (!formData.marketNomi || !formData.mahsulotTuri || !formData.miqdori) {
-            alert('Iltimos, barcha maydonlarni to\'ldiring');
+            toast.error('Iltimos, barcha maydonlarni to\'ldiring', {
+                icon: <AlertCircle size={18} />
+            });
             return;
         }
         addEntry(formData);
@@ -47,112 +49,178 @@ export const SimplifiedDashboard: React.FC = () => {
             narx: '',
             tolovHolati: "to'lanmagan"
         });
-        alert('Muvaffaqiyatli saqlandi!');
+        toast.success('Muvaffaqiyatli saqlandi!', {
+            icon: <CheckCircle2 size={18} />
+        });
+    };
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.05
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 }
     };
 
     return (
-        <div className="max-w-7xl mx-auto p-4 sm:p-8 bg-white dark:bg-slate-900 shadow-xl rounded-2xl mt-0 sm:mt-6 transition-colors duration-200">
-            <div className="flex justify-between items-center mb-10 gap-4">
-                <div className="flex-1">
-                    <h1 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white tracking-tight">Bo'zor Daftari</h1>
-                    <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mt-1">B2B savdo va hisob-kitob tizimi</p>
+        <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+            className="max-w-7xl mx-auto p-4 sm:p-8"
+        >
+            <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6 bg-white/40 dark:bg-slate-900/40 p-8 rounded-[2.5rem] border border-white/20 backdrop-blur-xl shadow-2xl">
+                <div>
+                    <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                        Bo'zor Daftari
+                    </h1>
+                    <p className="text-lg text-slate-500 dark:text-slate-400 mt-2 font-medium">
+                        B2B savdo va hisob-kitob tizimi • <span className="text-indigo-600 dark:text-indigo-400">Yangi tranzaksiya</span>
+                    </p>
                 </div>
-            </div>
+                <div className="flex items-center gap-4 bg-indigo-50 dark:bg-indigo-900/20 px-6 py-3 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
+                    <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="text-indigo-700 dark:text-indigo-300 font-bold uppercase tracking-widest text-xs">Tizim holati: Onlayn</span>
+                </div>
+            </motion.div>
 
             <div className="flex justify-center">
                 {/* Form Section */}
-                <div className="w-full space-y-4 sm:space-y-6 bg-slate-50/50 dark:bg-slate-800/50 p-4 sm:p-10 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <h2 className="text-xl sm:text-3xl font-black text-gray-800 dark:text-slate-200 mb-4 sm:mb-8 border-b dark:border-slate-700 pb-4 flex items-center gap-3">
-                        <div className="w-2 h-8 bg-blue-600 rounded-full"></div>
-                        Yangi yozuv qo'shish
-                    </h2>
+                <motion.div
+                    variants={itemVariants}
+                    className="w-full space-y-8 bg-white/60 dark:bg-slate-900/60 p-6 sm:p-12 rounded-[3rem] border border-white/30 dark:border-slate-800/50 shadow-2xl backdrop-blur-2xl relative overflow-hidden"
+                >
+                    {/* Decorative Blobs */}
+                    <div className="absolute top-[-10%] right-[-10%] w-[30%] h-[30%] bg-indigo-500/5 blur-[80px] rounded-full pointer-events-none" />
+                    <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-purple-500/5 blur-[80px] rounded-full pointer-events-none" />
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                        <div className="space-y-2">
-                            <label className="text-sm font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">Market nomi</label>
+                    <div className="flex items-center gap-4 mb-10">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-lg">
+                            <PlusCircle size={24} />
+                        </div>
+                        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-white">
+                            Yangi yozuv qo'shish
+                        </h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
+                        <motion.div variants={itemVariants} className="space-y-3">
+                            <label className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 ml-1">
+                                <ShoppingBag size={14} /> Market nomi
+                            </label>
                             <input
                                 type="text"
-                                placeholder="Market nomi"
-                                className="w-full p-4 border border-gray-200 dark:border-slate-600 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white transition-all shadow-sm text-lg"
+                                placeholder="Masalan: Oziq-ovqat olami"
+                                className="w-full p-5 bg-white/50 border border-slate-200/50 dark:bg-slate-950/30 dark:border-slate-800/50 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none dark:text-white transition-all shadow-sm text-lg font-medium placeholder:text-slate-300 dark:placeholder:text-slate-700"
                                 value={formData.marketNomi}
                                 onChange={(e) => setFormData({ ...formData, marketNomi: e.target.value })}
                             />
-                        </div>
+                        </motion.div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">Market raqami</label>
+                        <motion.div variants={itemVariants} className="space-y-3">
+                            <label className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 ml-1">
+                                <Hash size={14} /> Market raqami
+                            </label>
                             <input
                                 type="text"
                                 placeholder="+998"
-                                className="w-full p-4 border border-gray-200 dark:border-slate-600 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white transition-all shadow-sm text-lg"
+                                className="w-full p-5 bg-white/50 border border-slate-200/50 dark:bg-slate-950/30 dark:border-slate-800/50 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none dark:text-white transition-all shadow-sm text-lg font-medium"
                                 value={formData.marketRaqami}
                                 onChange={(e) => setFormData({ ...formData, marketRaqami: e.target.value })}
                             />
-                        </div>
+                        </motion.div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">Mahsulot turi</label>
+                        <motion.div variants={itemVariants} className="space-y-3">
+                            <label className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 ml-1">
+                                <Package size={14} /> Mahsulot turi
+                            </label>
                             <input
                                 type="text"
-                                placeholder="Mahsulot turi"
-                                className="w-full p-4 border border-gray-200 dark:border-slate-600 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white transition-all shadow-sm text-lg"
+                                placeholder="Nima sotildi?"
+                                className="w-full p-5 bg-white/50 border border-slate-200/50 dark:bg-slate-950/30 dark:border-slate-800/50 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none dark:text-white transition-all shadow-sm text-lg font-medium placeholder:text-slate-300 dark:placeholder:text-slate-700"
                                 value={formData.mahsulotTuri}
                                 onChange={(e) => setFormData({ ...formData, mahsulotTuri: e.target.value })}
                             />
-                        </div>
+                        </motion.div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">Miqdori</label>
+                        <motion.div variants={itemVariants} className="space-y-3">
+                            <label className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 ml-1">
+                                <PlusCircle size={14} /> Miqdori
+                            </label>
                             <input
                                 type="text"
                                 placeholder="Masalan: 50 kg"
-                                className="w-full p-4 border border-gray-200 dark:border-slate-600 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white transition-all shadow-sm text-lg"
+                                className="w-full p-5 bg-white/50 border border-slate-200/50 dark:bg-slate-950/30 dark:border-slate-800/50 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none dark:text-white transition-all shadow-sm text-lg font-medium placeholder:text-slate-300 dark:placeholder:text-slate-700"
                                 value={formData.miqdori}
                                 onChange={(e) => setFormData({ ...formData, miqdori: e.target.value })}
                             />
-                        </div>
+                        </motion.div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">Narxi (so'm)</label>
+                        <motion.div variants={itemVariants} className="space-y-3">
+                            <label className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 ml-1">
+                                <CreditCard size={14} /> Narxi (so'm)
+                            </label>
                             <input
                                 type="text"
                                 placeholder="0"
-                                className="w-full p-4 border border-gray-200 dark:border-slate-600 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white transition-all shadow-sm text-lg"
+                                className="w-full p-5 bg-white/50 border border-slate-200/50 dark:bg-slate-950/30 dark:border-slate-800/50 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none dark:text-white transition-all shadow-sm text-lg font-bold text-indigo-600 dark:text-indigo-400"
                                 value={formatNumber(formData.narx)}
                                 onChange={(e) => setFormData({ ...formData, narx: unformatNumber(e.target.value) })}
                             />
-                        </div>
+                        </motion.div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">To'lov holati</label>
-                            <div className="relative">
-                                <select
-                                    className="w-full p-4 border border-gray-200 dark:border-slate-600 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-white transition-all shadow-sm text-lg appearance-none cursor-pointer"
-                                    value={formData.tolovHolati}
-                                    onChange={(e) => setFormData({ ...formData, tolovHolati: e.target.value as any })}
+                        <motion.div variants={itemVariants} className="space-y-3">
+                            <label className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 ml-1">
+                                {formData.tolovHolati === "to'langan" ? <CheckCircle2 size={14} className="text-emerald-500" /> : <AlertCircle size={14} className="text-rose-500" />} To'lov holati
+                            </label>
+                            <div className="flex bg-white/50 dark:bg-slate-950/30 p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 relative">
+                                <motion.div
+                                    className={`absolute inset-y-1.5 rounded-xl ${formData.tolovHolati === "to'langan" ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-rose-500 shadow-lg shadow-rose-500/20'}`}
+                                    animate={{
+                                        left: formData.tolovHolati === "to'lanmagan" ? "4px" : "50%",
+                                        width: "calc(50% - 6px)",
+                                        x: formData.tolovHolati === "to'langan" ? 2 : 0
+                                    }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                />
+                                <button
+                                    onClick={() => setFormData({ ...formData, tolovHolati: "to'lanmagan" })}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-lg font-bold relative z-10 transition-colors ${formData.tolovHolati === "to'lanmagan" ? 'text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                                 >
-                                    <option value="to'lanmagan">To'lanmagan</option>
-                                    <option value="to'langan">To'langan</option>
-                                    <option value="kutilmoqda">Kutilmoqda</option>
-                                </select>
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
+                                    <AlertCircle size={20} strokeWidth={2.5} />
+                                    To'lanmagan
+                                </button>
+                                <button
+                                    onClick={() => setFormData({ ...formData, tolovHolati: "to'langan" })}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-lg font-bold relative z-10 transition-colors ${formData.tolovHolati === "to'langan" ? 'text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                                >
+                                    <CheckCircle2 size={20} strokeWidth={2.5} />
+                                    To'langan
+                                </button>
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
 
-                    <div className="pt-6 border-t dark:border-slate-700 mt-4">
-                        <button
+                    <motion.div variants={itemVariants} className="pt-10">
+                        <motion.button
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={handleSubmit}
-                            className="w-full py-5 bg-blue-600 text-white text-xl font-black rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 active:scale-[0.98] flex items-center justify-center gap-3 uppercase tracking-widest"
+                            className="w-full py-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xl font-black rounded-[1.5rem] hover:from-indigo-700 hover:to-purple-700 transition-all shadow-2xl shadow-indigo-500/30 flex items-center justify-center gap-4 uppercase tracking-[0.2em]"
                         >
-                            <Check size={28} />
+                            <Check size={28} strokeWidth={3} />
                             Saqlash
-                        </button>
-                    </div>
-                </div>
+                        </motion.button>
+                    </motion.div>
+                </motion.div>
             </div>
-        </div>
+        </motion.div>
     );
 };

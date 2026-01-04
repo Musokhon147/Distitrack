@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { User, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { loginSchema, LoginInput } from '@distitrack/common';
 
@@ -49,27 +49,67 @@ export const Login: React.FC = () => {
         }
     }, [isAuthenticated, navigate]);
 
+    const containerVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.6,
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, x: -10 },
+        visible: { opacity: 1, x: 0 }
+    };
+
     return (
-        <div className="min-h-[80vh] flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
-                {/* Logo or Brand Name */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 mb-4 animate-bounce-subtle">
-                        <User size={32} />
-                    </div>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+        <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-slate-50 dark:bg-[#020617]">
+            {/* Background elements */}
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full animate-pulse" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
+
+            <motion.div
+                className="w-full max-w-md relative z-10"
+                initial="hidden"
+                animate="visible"
+                variants={containerVariants}
+            >
+                {/* Header */}
+                <motion.div className="text-center mb-10" variants={itemVariants}>
+                    <motion.div
+                        className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-2xl shadow-indigo-500/30 mb-6 relative"
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        whileTap={{ scale: 0.9 }}
+                    >
+                        <User size={36} />
+                        <motion.div
+                            className="absolute -top-1 -right-1 bg-amber-400 text-white p-1 rounded-full shadow-lg"
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ repeat: Infinity, duration: 2 }}
+                        >
+                            <Sparkles size={12} />
+                        </motion.div>
+                    </motion.div>
+                    <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-3">
                         Xush kelibsiz
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-2">
+                    <p className="text-slate-500 dark:text-slate-400 font-medium">
                         Tizimga kirish uchun ma'lumotlaringizni kiriting
                     </p>
-                </div>
+                </motion.div>
 
                 {/* Login Card */}
-                <div className="glass-card rounded-3xl p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10">
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1">
+                <motion.div
+                    className="glass-card rounded-[2.5rem] p-10 border border-white/20 shadow-2xl backdrop-blur-xl bg-white/40 dark:bg-slate-900/40"
+                    variants={itemVariants}
+                >
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                        <motion.div className="space-y-2" variants={itemVariants}>
+                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
                                 Email yoki Login
                             </label>
                             <div className="relative group">
@@ -79,21 +119,21 @@ export const Login: React.FC = () => {
                                 <input
                                     {...register('email')}
                                     type="text"
-                                    className={`w-full pl-11 pr-4 py-3 bg-slate-50 border ${errors.email ? 'border-red-500' : 'border-slate-200'} dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white`}
+                                    className={`w-full pl-11 pr-4 py-4 bg-white/50 border ${errors.email ? 'border-red-500' : 'border-slate-200/50'} dark:bg-slate-950/30 dark:border-slate-800/50 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all dark:text-white font-medium`}
                                     placeholder="example@mail.com"
                                 />
                             </div>
                             {errors.email && (
-                                <p className="text-xs text-red-500 ml-1">{errors.email.message}</p>
+                                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs font-medium text-red-500 ml-1">{errors.email.message}</motion.p>
                             )}
-                        </div>
+                        </motion.div>
 
-                        <div className="space-y-2">
+                        <motion.div className="space-y-2" variants={itemVariants}>
                             <div className="flex justify-between items-center ml-1">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    Parol
+                                <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                                    Mahfiy parol
                                 </label>
-                                <Link to="/forgot-password" className="text-xs font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+                                <Link to="/forgot-password" className="text-xs font-bold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 transition-colors">
                                     Parolni unutdingizmi?
                                 </Link>
                             </div>
@@ -104,7 +144,7 @@ export const Login: React.FC = () => {
                                 <input
                                     {...register('password')}
                                     type={showPassword ? "text" : "password"}
-                                    className={`w-full pl-11 pr-12 py-3 bg-slate-50 border ${errors.password ? 'border-red-500' : 'border-slate-200'} dark:bg-slate-900/50 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all dark:text-white`}
+                                    className={`w-full pl-11 pr-12 py-4 bg-white/50 border ${errors.password ? 'border-red-500' : 'border-slate-200/50'} dark:bg-slate-950/30 dark:border-slate-800/50 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all dark:text-white font-medium`}
                                     placeholder="••••••••"
                                 />
                                 <button
@@ -116,35 +156,40 @@ export const Login: React.FC = () => {
                                 </button>
                             </div>
                             {errors.password && (
-                                <p className="text-xs text-red-500 ml-1">{errors.password.message}</p>
+                                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs font-medium text-red-500 ml-1">{errors.password.message}</motion.p>
                             )}
-                        </div>
+                        </motion.div>
 
-                        <button
+                        <motion.button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl text-white font-semibold bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/25"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="w-full flex items-center justify-center py-4 px-6 rounded-2xl text-white font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed shadow-xl shadow-indigo-500/25 relative overflow-hidden group"
                         >
                             {isLoading ? (
-                                <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <div className="h-6 w-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
                             ) : (
-                                <>
-                                    Kirish
-                                    <ArrowRight className="ml-2" size={18} />
-                                </>
+                                <div className="flex items-center">
+                                    <span>Kirish</span>
+                                    <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
+                                </div>
                             )}
-                        </button>
+                        </motion.button>
                     </form>
-                </div>
+                </motion.div>
 
                 {/* Footer Link */}
-                <p className="text-center mt-8 text-slate-600 dark:text-slate-400">
+                <motion.p
+                    className="text-center mt-10 text-slate-600 dark:text-slate-400 font-medium"
+                    variants={itemVariants}
+                >
                     Hisobingiz yo'qmi?{' '}
-                    <Link to="/register" className="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+                    <Link to="/register" className="font-bold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 transition-colors border-b-2 border-indigo-600/20 hover:border-indigo-600">
                         Ro'yxatdan o'ting
                     </Link>
-                </p>
-            </div>
+                </motion.p>
+            </motion.div>
         </div>
     );
 };

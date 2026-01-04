@@ -5,6 +5,9 @@ import { Records } from './features/records/pages/Records';
 import { Hisobot } from './features/records/pages/Hisobot';
 import { Login } from './features/auth/pages/Login';
 import { Register } from './features/auth/pages/Register';
+import { Profile } from './features/dashboard/pages/Profile';
+import { ForgotPassword } from './features/auth/pages/ForgotPassword';
+import { ResetPassword } from './features/auth/pages/ResetPassword';
 import { Navbar } from './components/layout/Navbar';
 import { EntryProvider } from './context/EntryContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -41,7 +44,7 @@ import { LoadingScreen } from './components/ui/LoadingScreen';
 function AppContent() {
     const location = useLocation();
     const { isAuthenticated, loading } = useAuth();
-    const isAuthPage = ['/login', '/register'].includes(location.pathname);
+    const isAuthPage = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
 
     if (loading) {
         return <LoadingScreen />;
@@ -54,6 +57,8 @@ function AppContent() {
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     <Route
                         path="/"
                         element={
@@ -85,6 +90,14 @@ function AppContent() {
                         element={
                             <ProtectedRoute>
                                 <Hisobot />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/profile"
+                        element={
+                            <ProtectedRoute>
+                                <Profile />
                             </ProtectedRoute>
                         }
                     />

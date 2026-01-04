@@ -8,12 +8,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 
-const loginSchema = z.object({
-    email: z.string().email('Noto\'g\'ri email formati'),
-    password: z.string().min(6, 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak'),
-});
+import { loginSchema, LoginInput } from '@distitrack/common';
 
-type LoginForm = z.infer<typeof loginSchema>;
+// Local schema removed in favor of shared one
 
 export const Login: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -22,11 +19,11 @@ export const Login: React.FC = () => {
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
 
-    const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
+    const { register, handleSubmit, formState: { errors } } = useForm<LoginInput>({
         resolver: zodResolver(loginSchema),
     });
 
-    const onSubmit = async (data: LoginForm) => {
+    const onSubmit = async (data: LoginInput) => {
         setIsLoading(true);
         try {
             const { error } = await supabase.auth.signInWithPassword({
@@ -96,9 +93,9 @@ export const Login: React.FC = () => {
                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                     Parol
                                 </label>
-                                <a href="#" className="text-xs font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+                                <Link to="/forgot-password" className="text-xs font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
                                     Parolni unutdingizmi?
-                                </a>
+                                </Link>
                             </div>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500 transition-colors">

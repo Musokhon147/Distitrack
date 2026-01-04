@@ -67,7 +67,7 @@ export const Navbar: React.FC = () => {
                             <LogOut size={24} />
                         </button>
 
-                        <div className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-slate-200 dark:border-slate-700 ml-2">
+                        <NavLink to="/profile" className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-slate-200 dark:border-slate-700 ml-2 hover:opacity-80 transition-opacity">
                             <div className="hidden sm:block text-right">
                                 <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
                                     {user?.user_metadata?.full_name || 'Foydalanuvchi'}
@@ -81,7 +81,7 @@ export const Navbar: React.FC = () => {
                                     ? user.user_metadata.full_name.charAt(0).toUpperCase()
                                     : (user?.email?.charAt(0).toUpperCase() || 'U')}
                             </div>
-                        </div>
+                        </NavLink>
                     </div>
                 </div>
             </div>

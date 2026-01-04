@@ -6,7 +6,7 @@ import { Book, History, PieChart, Moon, Sun, LogOut } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
     const { isDark, toggleTheme } = useTheme();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
 
     return (
         <nav className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-50 transition-colors">
@@ -66,6 +66,22 @@ export const Navbar: React.FC = () => {
                         >
                             <LogOut size={24} />
                         </button>
+
+                        <div className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-slate-200 dark:border-slate-700 ml-2">
+                            <div className="hidden sm:block text-right">
+                                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                                    {user?.user_metadata?.full_name || 'Foydalanuvchi'}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    {user?.email}
+                                </p>
+                            </div>
+                            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-lg shadow-sm">
+                                {user?.user_metadata?.full_name
+                                    ? user.user_metadata.full_name.charAt(0).toUpperCase()
+                                    : (user?.email?.charAt(0).toUpperCase() || 'U')}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

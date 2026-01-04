@@ -28,3 +28,25 @@ export const profileSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ProfileInput = z.infer<typeof profileSchema>;
+
+export const marketSchema = z.object({
+    name: z.string().min(2, "Market nomi kamida 2 ta harf bo'lishi kerak"),
+    phone: z.string().min(9, "Telefon raqami noto'g'ri").optional().or(z.literal('')),
+});
+
+export const productSchema = z.object({
+    name: z.string().min(2, "Mahsulot nomi kamida 2 ta harf bo'lishi kerak"),
+});
+
+export const entrySchema = z.object({
+    marketNomi: z.string().min(1, "Market tanlanishi kerak"),
+    marketRaqami: z.string().optional(),
+    mahsulotTuri: z.string().min(1, "Mahsulot tanlanishi kerak"),
+    miqdori: z.string().min(1, "Miqdor kiritilishi kerak"),
+    narx: z.string().min(1, "Narx kiritilishi kerak"),
+    tolovHolati: z.enum(["to'langan", "to'lanmagan", "kutilmoqda"]),
+});
+
+export type MarketInput = z.infer<typeof marketSchema>;
+export type ProductInput = z.infer<typeof productSchema>;
+export type EntryInput = z.infer<typeof entrySchema>;

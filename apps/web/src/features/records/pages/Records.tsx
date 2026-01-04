@@ -188,9 +188,9 @@ export const Records: React.FC = () => {
                                                 <div className="relative">
                                                     <ShoppingBag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                     <input
-                                                        className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium text-slate-700 dark:text-slate-200"
+                                                        disabled
+                                                        className="w-full pl-11 pr-4 py-3 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-bold text-slate-500 dark:text-slate-400 opacity-70 cursor-not-allowed"
                                                         value={editForm.marketNomi}
-                                                        onChange={(e) => setEditForm({ ...editForm, marketNomi: e.target.value })}
                                                         placeholder="Market nomini kiriting"
                                                     />
                                                 </div>
@@ -200,9 +200,9 @@ export const Records: React.FC = () => {
                                                 <div className="relative">
                                                     <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                     <input
-                                                        className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium text-slate-700 dark:text-slate-200"
+                                                        disabled
+                                                        className="w-full pl-11 pr-4 py-3 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-bold text-slate-500 dark:text-slate-400 opacity-70 cursor-not-allowed"
                                                         value={editForm.mahsulotTuri}
-                                                        onChange={(e) => setEditForm({ ...editForm, mahsulotTuri: e.target.value })}
                                                         placeholder="Mahsulot turi"
                                                     />
                                                 </div>

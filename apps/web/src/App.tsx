@@ -6,11 +6,15 @@ import { Hisobot } from './features/records/pages/Hisobot';
 import { Login } from './features/auth/pages/Login';
 import { Register } from './features/auth/pages/Register';
 import { Profile } from './features/dashboard/pages/Profile';
+import { Markets } from './features/markets/pages/Markets';
+import { Products } from './features/products/pages/Products';
 import { ForgotPassword } from './features/auth/pages/ForgotPassword';
 import { ResetPassword } from './features/auth/pages/ResetPassword';
 import { Navbar } from './components/layout/Navbar';
 import { EntryProvider } from './context/EntryContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { MarketProvider } from './context/MarketContext';
+import { ProductProvider } from './context/ProductContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
 
@@ -22,9 +26,13 @@ function App() {
             <Toaster position="top-center" richColors />
             <AuthProvider>
                 <EntryProvider>
-                    <BrowserRouter>
-                        <AppContent />
-                    </BrowserRouter>
+                    <MarketProvider>
+                        <ProductProvider>
+                            <BrowserRouter>
+                                <AppContent />
+                            </BrowserRouter>
+                        </ProductProvider>
+                    </MarketProvider>
                 </EntryProvider>
             </AuthProvider>
         </ThemeProvider>
@@ -90,6 +98,22 @@ function AppContent() {
                         element={
                             <ProtectedRoute>
                                 <Hisobot />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/markets"
+                        element={
+                            <ProtectedRoute>
+                                <Markets />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/products"
+                        element={
+                            <ProtectedRoute>
+                                <Products />
                             </ProtectedRoute>
                         }
                     />

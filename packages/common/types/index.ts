@@ -8,3 +8,14 @@ export interface Entry {
     tolovHolati: 'to\'langan' | 'to\'lanmagan' | 'kutilmoqda';
     sana: string;
 }
+
+export interface Market {
+    id: string;
+    name: string;
+    phone: string;
+}
+
+export interface Product {
+    id: string;
+    name: string;
+}

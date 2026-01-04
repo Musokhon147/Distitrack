@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { useEntries } from '../../../hooks/useEntries';
-import { Check, PlusCircle, ShoppingBag, Hash, Package, CreditCard, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useMarkets } from '../../../context/MarketContext';
+import { useProducts } from '../../../context/ProductContext';
+import { CustomSelect } from '../../../components/ui/CustomSelect';
+import { Check, PlusCircle, ShoppingBag, Hash, Package, CreditCard, Clock, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 export const SimplifiedDashboard: React.FC = () => {
     const { addEntry } = useEntries();
+    const { markets } = useMarkets();
+    const { products } = useProducts();
     const [formData, setFormData] = useState<{
         marketNomi: string;
         marketRaqami: string;
@@ -112,15 +117,20 @@ export const SimplifiedDashboard: React.FC = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
                         <motion.div variants={itemVariants} className="space-y-3">
-                            <label className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 ml-1">
-                                <ShoppingBag size={14} /> Market nomi
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="Masalan: Oziq-ovqat olami"
-                                className="w-full p-5 bg-white/50 border border-slate-200/50 dark:bg-slate-950/30 dark:border-slate-800/50 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none dark:text-white transition-all shadow-sm text-lg font-medium placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                            <CustomSelect
+                                label="Marketlar"
+                                icon={<ShoppingBag size={14} />}
                                 value={formData.marketNomi}
-                                onChange={(e) => setFormData({ ...formData, marketNomi: e.target.value })}
+                                onChange={(value) => {
+                                    const selectedMarket = markets.find(m => m.name === value);
+                                    setFormData({
+                                        ...formData,
+                                        marketNomi: value,
+                                        marketRaqami: selectedMarket?.phone || formData.marketRaqami
+                                    });
+                                }}
+                                options={markets.map(m => ({ id: m.id, value: m.name, label: m.name }))}
+                                placeholder="Marketni tanlang"
                             />
                         </motion.div>
 
@@ -138,15 +148,13 @@ export const SimplifiedDashboard: React.FC = () => {
                         </motion.div>
 
                         <motion.div variants={itemVariants} className="space-y-3">
-                            <label className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 ml-1">
-                                <Package size={14} /> Mahsulot turi
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="Nima sotildi?"
-                                className="w-full p-5 bg-white/50 border border-slate-200/50 dark:bg-slate-950/30 dark:border-slate-800/50 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none dark:text-white transition-all shadow-sm text-lg font-medium placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                            <CustomSelect
+                                label="Mahsulot turi"
+                                icon={<Package size={14} />}
                                 value={formData.mahsulotTuri}
-                                onChange={(e) => setFormData({ ...formData, mahsulotTuri: e.target.value })}
+                                onChange={(value) => setFormData({ ...formData, mahsulotTuri: value })}
+                                options={products.map(p => ({ id: p.id, value: p.name, label: p.name }))}
+                                placeholder="Mahsulotni tanlang"
                             />
                         </motion.div>
 

@@ -59,30 +59,36 @@ export const Navbar: React.FC = () => {
                             <PieChart size={24} />
                             Hisob-kitob
                         </NavLink>
-                        <NavLink
-                            to="/markets"
-                            className={({ isActive }) => `
-                            flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base sm:text-lg
-                            ${isActive
-                                    ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/30'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}
-                        `}
-                        >
-                            <Store size={24} />
-                            Marketlar
-                        </NavLink>
-                        <NavLink
-                            to="/products"
-                            className={({ isActive }) => `
-                            flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base sm:text-lg
-                            ${isActive
-                                    ? 'text-pink-600 bg-pink-50 dark:bg-pink-900/30'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}
-                        `}
-                        >
-                            <Package size={24} />
-                            Mahsulotlar
-                        </NavLink>
+
+                        {/* Only show Marketlar and Mahsulotlar for Seller role */}
+                        {user?.user_metadata?.role !== 'market' && (
+                            <>
+                                <NavLink
+                                    to="/markets"
+                                    className={({ isActive }) => `
+                                    flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base sm:text-lg
+                                    ${isActive
+                                            ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/30'
+                                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}
+                                `}
+                                >
+                                    <Store size={24} />
+                                    Marketlar
+                                </NavLink>
+                                <NavLink
+                                    to="/products"
+                                    className={({ isActive }) => `
+                                    flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base sm:text-lg
+                                    ${isActive
+                                            ? 'text-pink-600 bg-pink-50 dark:bg-pink-900/30'
+                                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}
+                                `}
+                                >
+                                    <Package size={24} />
+                                    Mahsulotlar
+                                </NavLink>
+                            </>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-2">

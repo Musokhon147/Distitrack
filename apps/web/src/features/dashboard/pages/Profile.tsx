@@ -9,7 +9,7 @@ import { profileSchema, ProfileInput } from '@distitrack/common';
 import { motion } from 'framer-motion';
 
 export const Profile: React.FC = () => {
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
 
     const { register, handleSubmit, formState: { errors } } = useForm<ProfileInput>({
@@ -68,14 +68,25 @@ export const Profile: React.FC = () => {
             <div className="absolute top-0 right-[-20%] w-[50%] h-[50%] bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none" />
             <div className="absolute bottom-[-10%] left-[-20%] w-[50%] h-[50%] bg-purple-500/10 blur-[100px] rounded-full pointer-events-none" />
 
-            <motion.div variants={itemVariants} className="mb-8 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
-                    <User size={24} />
+            <motion.div variants={itemVariants} className="mb-8 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                        <User size={24} />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Profil Sozlamalari</h1>
+                        <p className="text-slate-500 dark:text-slate-400">Shaxsiy ma'lumotlarni boshqarish</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Profil Sozlamalari</h1>
-                    <p className="text-slate-500 dark:text-slate-400">Shaxsiy ma'lumotlarni boshqarish</p>
-                </div>
+
+                {profile?.role && (
+                    <div className={`px-4 py-2 rounded-xl text-sm font-bold border ${profile.role === 'market'
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800'
+                        : 'bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800'
+                        }`}>
+                        {profile.role === 'market' ? "Siz Market sifatida tizimdasiz" : "Siz Sotuvchi sifatida tizimdasiz"}
+                    </div>
+                )}
             </motion.div>
 
             <motion.div

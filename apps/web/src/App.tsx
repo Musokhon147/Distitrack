@@ -10,6 +10,7 @@ import { Markets } from './features/markets/pages/Markets';
 import { Products } from './features/products/pages/Products';
 import { ForgotPassword } from './features/auth/pages/ForgotPassword';
 import { ResetPassword } from './features/auth/pages/ResetPassword';
+import { MarketDashboard } from './features/dashboard/MarketDashboard';
 import { Navbar } from './components/layout/Navbar';
 import { EntryProvider } from './context/EntryContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -39,11 +40,19 @@ function App() {
     );
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-    const { isAuthenticated } = useAuth();
+function ProtectedRoute({ children, role }: { children: React.ReactNode, role?: 'seller' | 'market' }) {
+    const { isAuthenticated, profile, loading } = useAuth();
+
+    if (loading) return null;
+
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
+
+    if (role && profile && profile.role !== role) {
+        return <Navigate to={profile.role === 'seller' ? '/dashboard' : '/market-dashboard'} replace />;
+    }
+
     return <>{children}</>;
 }
 
@@ -52,7 +61,7 @@ import { LoadingScreen } from './components/ui/LoadingScreen';
 
 function AppContent() {
     const location = useLocation();
-    const { isAuthenticated, loading } = useAuth();
+    const { isAuthenticated, profile, loading } = useAuth();
     const isAuthPage = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
 
     if (loading) {
@@ -73,7 +82,7 @@ function AppContent() {
                             path="/"
                             element={
                                 isAuthenticated ? (
-                                    <Navigate to="/dashboard" replace />
+                                    <Navigate to={profile?.role === 'seller' ? '/dashboard' : '/market-dashboard'} replace />
                                 ) : (
                                     <Navigate to="/login" replace />
                                 )
@@ -82,8 +91,16 @@ function AppContent() {
                         <Route
                             path="/dashboard"
                             element={
-                                <ProtectedRoute>
+                                <ProtectedRoute role="seller">
                                     <SimplifiedDashboard />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/market-dashboard"
+                            element={
+                                <ProtectedRoute role="market">
+                                    <MarketDashboard />
                                 </ProtectedRoute>
                             }
                         />

@@ -18,5 +18,8 @@
     "optionalDependencies": {
         "@rollup/rollup-linux-x64-gnu": "*",
         "@rollup/rollup-linux-x64-musl": "*"
+    },
+    "dependencies": {
+        "pg": "^8.16.3"
     }
 }

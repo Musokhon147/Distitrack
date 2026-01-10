@@ -7,38 +7,99 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginInput } from '@distitrack/common';
 
+type AuthRole = 'seller' | 'market';
+
 export const LoginScreen = () => {
     const { control, handleSubmit, formState: { errors } } = useForm<LoginInput>({
         resolver: zodResolver(loginSchema),
     });
     const [loading, setLoading] = useState(false);
+    const [selectedRole, setSelectedRole] = useState<AuthRole>('seller');
     const navigation = useNavigation<any>();
 
     const onSubmit = async (data: LoginInput) => {
         setLoading(true);
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            const { data: authData, error } = await supabase.auth.signInWithPassword({
                 email: data.email,
                 password: data.password,
             });
 
             if (error) throw error;
+
+            if (authData.user) {
+                // Fetch profile to verify role
+                let { data: profileData, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', authData.user.id)
+                    .single();
+
+                // SELF-HEALING: If profile doesn't exist, create it
+                if (profileError && profileError.code === 'PGRST116') {
+                    const { data: newProfile, error: upsertError } = await supabase
+                        .from('profiles')
+                        .upsert({
+                            id: authData.user.id,
+                            role: selectedRole,
+                            full_name: authData.user.user_metadata?.full_name || 'Foydalanuvchi',
+                            updated_at: new Date().toISOString()
+                        })
+                        .select('role')
+                        .single();
+
+                    if (upsertError) throw upsertError;
+                    profileData = newProfile;
+                } else if (profileError || !profileData) {
+                    throw new Error('Profilingiz topilmadi');
+                }
+
+                if (profileData.role !== selectedRole) {
+                    const roleName = selectedRole === 'seller' ? 'Sotuvchi' : "Do'kon";
+                    const oppositeRole = selectedRole === 'seller' ? "do'kon" : "sotuvchi";
+                    throw new Error(`Bu hisob ${oppositeRole} hisobi. Iltimos, "${roleName}" tugmasini tanlang.`);
+                }
+            }
         } catch (error: any) {
             Alert.alert('Kirishda xatolik', error.message);
+            await supabase.auth.signOut();
         } finally {
             setLoading(false);
         }
     };
 
+    const themeColor = selectedRole === 'seller' ? '#4f46e5' : '#10b981';
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
                 <View style={styles.header}>
-                    <View style={styles.logoBox}>
+                    <View style={[styles.logoBox, { backgroundColor: themeColor }]}>
                         <Text style={styles.logoText}>BD</Text>
                     </View>
                     <Text style={styles.title}>Xush kelibsiz</Text>
                     <Text style={styles.subtitle}>Tizimga kirish uchun ma'lumotlaringizni kiriting</Text>
+                </View>
+
+                <View style={styles.roleContainer}>
+                    <TouchableOpacity
+                        style={[
+                            styles.roleButton,
+                            selectedRole === 'seller' && { backgroundColor: themeColor }
+                        ]}
+                        onPress={() => setSelectedRole('seller')}
+                    >
+                        <Text style={[styles.roleButtonText, selectedRole === 'seller' && styles.roleButtonTextActive]}>Sotuvchi</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[
+                            styles.roleButton,
+                            selectedRole === 'market' && { backgroundColor: themeColor }
+                        ]}
+                        onPress={() => setSelectedRole('market')}
+                    >
+                        <Text style={[styles.roleButtonText, selectedRole === 'market' && styles.roleButtonTextActive]}>Do'kon</Text>
+                    </TouchableOpacity>
                 </View>
 
                 <View style={styles.form}>
@@ -82,7 +143,7 @@ export const LoginScreen = () => {
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.button, loading && styles.buttonDisabled]}
+                        style={[styles.button, { backgroundColor: themeColor }, loading && styles.buttonDisabled]}
                         onPress={handleSubmit(onSubmit)}
                         disabled={loading}
                     >
@@ -95,7 +156,7 @@ export const LoginScreen = () => {
 
                     <TouchableOpacity onPress={() => navigation.navigate('Register')}>
                         <Text style={styles.footerText}>
-                            Hisobingiz yo'qmi? <Text style={styles.link}>Ro'yxatdan o'ting</Text>
+                            Hisobingiz yo'qmi? <Text style={[styles.link, { color: themeColor }]}>Ro'yxatdan o'ting</Text>
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -121,7 +182,6 @@ const styles = StyleSheet.create({
     logoBox: {
         width: 64,
         height: 64,
-        backgroundColor: '#4f46e5',
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
@@ -147,6 +207,27 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#64748b',
         textAlign: 'center',
+    },
+    roleContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#e2e8f0',
+        padding: 4,
+        borderRadius: 12,
+        marginBottom: 24,
+    },
+    roleButton: {
+        flex: 1,
+        paddingVertical: 10,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    roleButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#64748b',
+    },
+    roleButtonTextActive: {
+        color: '#fff',
     },
     form: {
         backgroundColor: '#fff',
@@ -184,7 +265,6 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     button: {
-        backgroundColor: '#4f46e5',
         padding: 16,
         borderRadius: 12,
         alignItems: 'center',
@@ -205,7 +285,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     link: {
-        color: '#4f46e5',
         fontWeight: 'bold',
     },
 });

@@ -72,7 +72,7 @@ export const MarketDashboard: React.FC = () => {
     const formatNumber = (val: string) => {
         if (!val) return '0';
         // Remove all non-digit characters except decimal point
-        const num = typeof val === 'string' ? val.replace(/[^\d.]/g, '') : val.toString();
+        const num = val.replace(/[^\d.]/g, '');
         const parsed = parseFloat(num);
         if (isNaN(parsed)) return '0';
         return new Intl.NumberFormat('en-US').format(parsed);

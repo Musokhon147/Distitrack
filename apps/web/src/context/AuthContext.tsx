@@ -31,16 +31,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fetchUserProfile = async (userId: string) => {
         try {
+            // Optimize: select only needed fields
             const { data, error } = await supabase
                 .from('profiles')
-                .select('*, markets(name)')
+                .select('id, full_name, role, market_id, markets(name)')
                 .eq('id', userId)
                 .single();
 
             if (error) throw error;
 
             setProfile({
-                ...data,
+                id: data.id,
+                full_name: data.full_name,
+                role: data.role,
+                market_id: data.market_id,
                 market_name: data.markets?.name
             });
         } catch (error) {
@@ -50,22 +54,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     useEffect(() => {
-        // Initialize auth state
+        let mounted = true;
+        let timeoutId: NodeJS.Timeout;
+
+        // Initialize auth state with timeout
         const initializeAuth = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                // Set a timeout to ensure loading doesn't get stuck
+                timeoutId = setTimeout(() => {
+                    if (mounted) {
+                        console.warn('Auth initialization timeout - setting loading to false');
+                        setLoading(false);
+                    }
+                }, 5000); // 5 second timeout
+
+                const { data: { session }, error } = await supabase.auth.getSession();
+                
+                if (!mounted) return;
+
+                if (error) {
+                    console.error("Auth session error:", error);
+                    setLoading(false);
+                    clearTimeout(timeoutId);
+                    return;
+                }
+
                 setSession(session);
                 setUser(session?.user ?? null);
 
                 if (session?.user) {
-                    await fetchUserProfile(session.user.id);
+                    try {
+                        await fetchUserProfile(session.user.id);
+                    } catch (profileError) {
+                        console.error("Profile fetch error:", profileError);
+                        // Continue even if profile fetch fails
+                    }
                 } else {
                     setProfile(null);
                 }
             } catch (error) {
                 console.error("Auth initialization error:", error);
             } finally {
-                setLoading(false);
+                if (mounted) {
+                    clearTimeout(timeoutId);
+                    setLoading(false);
+                }
             }
         };
 
@@ -73,11 +106,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Listen for changes on auth state (logged in, signed out, etc.)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            if (!mounted) return;
+
             setSession(session);
             setUser(session?.user ?? null);
 
             if (session?.user) {
-                await fetchUserProfile(session.user.id);
+                try {
+                    await fetchUserProfile(session.user.id);
+                } catch (profileError) {
+                    console.error("Profile fetch error on auth change:", profileError);
+                }
             } else {
                 setProfile(null);
             }
@@ -85,7 +124,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLoading(false);
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            mounted = false;
+            clearTimeout(timeoutId);
+            subscription.unsubscribe();
+        };
     }, []);
 
     const signOut = async () => {

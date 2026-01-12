@@ -30,9 +30,10 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const fetchEntries = async () => {
         setLoading(true);
+        // Optimize: select only needed fields instead of *
         const { data, error } = await supabase
             .from('entries')
-            .select('*')
+            .select('id, client, izoh, mahsulot, miqdor, narx, holat, sana, created_at, user_id')
             .order('created_at', { ascending: false });
 
         if (error) {

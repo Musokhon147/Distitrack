@@ -28,9 +28,10 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
 
         setLoading(true);
         try {
+            // Optimize: select only needed fields instead of *
             const { data, error } = await supabase
                 .from('products')
-                .select('*')
+                .select('id, name, created_at')
                 .order('name', { ascending: true });
 
             if (error) throw error;

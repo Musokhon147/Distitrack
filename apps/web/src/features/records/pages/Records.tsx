@@ -203,8 +203,8 @@ export const Records: React.FC = () => {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                             <input
                                 type="text"
-                                placeholder="Do'kon nomi yoki mahsulot turi..."
-                                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-primary-500 outline-none dark:text-white shadow-sm"
+                                placeholder="Do'kon nomi yoki mahsulot turi bo'yicha qidirish..."
+                                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none dark:text-white shadow-sm transition-all placeholder:text-slate-400"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -305,9 +305,28 @@ export const Records: React.FC = () => {
                             </div>
                         ))
                     ) : filteredEntries.length === 0 ? (
-                        <div className="py-20 text-center text-slate-400 font-medium bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border-2 border-dashed border-slate-100 dark:border-slate-800">
-                            Topilmadi
-                        </div>
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="py-20 text-center bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700"
+                        >
+                            <motion.div 
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                                className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-6 mx-auto shadow-lg"
+                            >
+                                <Search size={32} className="text-slate-400 dark:text-slate-500" />
+                            </motion.div>
+                            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">
+                                Yozuvlar topilmadi
+                            </h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                                {searchTerm || statusFilter !== 'Barchasi'
+                                    ? 'Qidiruv yoki filtrlash natijalariga mos yozuvlar topilmadi'
+                                    : 'Hozircha yozuvlar mavjud emas'}
+                            </p>
+                        </motion.div>
                     ) : (
                         <>
                             {filteredEntries.map(entry => (

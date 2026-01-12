@@ -97,8 +97,8 @@ export const Products: React.FC = () => {
                             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                             <input
                                 type="text"
-                                placeholder="Qidirish..."
-                                className="w-full pl-14 pr-6 py-5 bg-white dark:bg-slate-900 border-none rounded-[1.5rem] shadow-sm text-lg outline-none dark:text-white"
+                                placeholder="Mahsulot nomi bo'yicha qidirish..."
+                                className="w-full pl-14 pr-6 py-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[1.5rem] shadow-sm text-lg outline-none dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -114,7 +114,7 @@ export const Products: React.FC = () => {
                                         initial={{ opacity: 0, scale: 0.9 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.9 }}
-                                        className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
+                                        className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group relative overflow-hidden"
                                     >
                                         <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-bl-[3rem] -mr-4 -mt-4 transition-transform group-hover:scale-150 duration-500" />
 
@@ -138,10 +138,28 @@ export const Products: React.FC = () => {
                                 ))}
                             </AnimatePresence>
                             {filteredProducts.length === 0 && (
-                                <div className="col-span-full py-12 text-center text-slate-400">
-                                    <Package size={48} className="mx-auto mb-4 opacity-50" />
-                                    <p>Mahsulotlar topilmadi</p>
-                                </div>
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="col-span-full py-16 text-center"
+                                >
+                                    <motion.div 
+                                        initial={{ scale: 0, rotate: -180 }}
+                                        animate={{ scale: 1, rotate: 0 }}
+                                        transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                                        className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 flex items-center justify-center mb-6 mx-auto shadow-lg"
+                                    >
+                                        <Package size={48} className="text-indigo-500 dark:text-indigo-400" />
+                                    </motion.div>
+                                    <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">
+                                        {searchTerm ? 'Mahsulotlar topilmadi' : 'Hozircha mahsulotlar yo\'q'}
+                                    </h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                                        {searchTerm 
+                                            ? 'Qidiruv bo\'yicha hech narsa topilmadi. Boshqa kalit so\'z bilan qidiring.'
+                                            : 'Yangi mahsulot qo\'shish uchun formadan foydalaning'}
+                                    </p>
+                                </motion.div>
                             )}
                         </motion.div>
                     </div>

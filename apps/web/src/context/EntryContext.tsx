@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Entry } from '@distitrack/common';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
+import { toast } from 'sonner';
 
 interface EntryContextType {
     entries: Entry[];
@@ -107,7 +108,128 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     const updateEntry = async (id: string, updatedEntry: Partial<Entry>) => {
-        // Map partial updates
+        if (!user) return;
+
+        // Check if payment status is being changed to 'to'langan'
+        const isChangingToPaid = updatedEntry.tolovHolati === "to'langan";
+        
+        if (isChangingToPaid) {
+            // Get the current entry to check its status
+            const currentEntry = entries.find(e => e.id === id);
+            if (!currentEntry) {
+                alert('Yozuv topilmadi');
+                return;
+            }
+
+            // If it's already paid, update directly
+            if (currentEntry.tolovHolati === "to'langan") {
+                // Just update directly since it's already paid
+            } else {
+                // Get the entry from database to get market_id
+                const { data: entryData, error: entryError } = await supabase
+                    .from('entries')
+                    .select('client, holat, market_id')
+                    .eq('id', id)
+                    .single();
+
+                if (entryError || !entryData) {
+                    alert('Yozuv ma\'lumotlarini olishda xatolik');
+                    return;
+                }
+
+                let marketId = entryData.market_id;
+
+                // If market_id is not set, look it up by market name
+                if (!marketId) {
+                    const { data: marketData, error: marketError } = await supabase
+                        .from('markets')
+                        .select('id')
+                        .eq('name', entryData.client)
+                        .single();
+
+                    if (marketError || !marketData) {
+                        alert('Market ma\'lumotlarini topishda xatolik');
+                        return;
+                    }
+                    marketId = marketData.id;
+                }
+
+                // Create a payment confirmation request
+                const { error: confirmationError } = await supabase
+                    .from('payment_confirmations')
+                    .insert([{
+                        entry_id: id,
+                        requested_by: user.id,
+                        market_id: marketId,
+                        requested_status: "to'langan",
+                        current_status: entryData.holat || currentEntry.tolovHolati,
+                        status: 'pending'
+                    }]);
+
+                if (confirmationError) {
+                    // If table doesn't exist, just update the entry directly
+                    if (confirmationError.code === '42P01' || confirmationError.message?.includes('does not exist')) {
+                        console.warn('Payment confirmations table does not exist. Updating entry directly.');
+                        // Update the entry directly since confirmation system isn't set up yet
+                        const { error: directUpdateError } = await supabase
+                            .from('entries')
+                            .update({ holat: "to'langan" })
+                            .eq('id', id);
+                        
+                        if (directUpdateError) {
+                            console.error('Error updating entry:', directUpdateError);
+                            alert(`Xatolik: ${directUpdateError.message}`);
+                        } else {
+                            setEntries(entries.map(e => e.id === id ? { ...e, tolovHolati: "to'langan" } : e));
+                        }
+                        return;
+                    }
+                    console.error('Error creating confirmation request:', confirmationError);
+                    alert(`Tasdiqlash so\'rovi yaratishda xatolik: ${confirmationError.message}`);
+                    return;
+                }
+
+                // Update entry status to "kutilmoqda" (waiting for confirmation) in database
+                const { error: statusUpdateError } = await supabase
+                    .from('entries')
+                    .update({ holat: 'kutilmoqda' })
+                    .eq('id', id);
+
+                if (statusUpdateError) {
+                    console.error('Error updating entry status to waiting:', statusUpdateError);
+                }
+
+                // Update other fields (not payment status) if needed
+                const dbUpdate: any = {};
+                if (updatedEntry.marketNomi !== undefined) dbUpdate.client = updatedEntry.marketNomi;
+                if (updatedEntry.mahsulotTuri !== undefined) dbUpdate.mahsulot = updatedEntry.mahsulotTuri;
+                if (updatedEntry.miqdori !== undefined) dbUpdate.miqdor = updatedEntry.miqdori;
+                if (updatedEntry.narx !== undefined) dbUpdate.narx = updatedEntry.narx;
+                if (updatedEntry.marketRaqami !== undefined) dbUpdate.izoh = updatedEntry.marketRaqami;
+
+                // Update other fields if there are any
+                if (Object.keys(dbUpdate).length > 0) {
+                    const { error: updateError } = await supabase
+                        .from('entries')
+                        .update(dbUpdate)
+                        .eq('id', id);
+
+                    if (updateError) {
+                        console.error('Error updating entry:', updateError);
+                    }
+                }
+
+                // Update local state to show "kutilmoqda" (waiting) status
+                setEntries(entries.map(e => e.id === id ? { ...e, ...updatedEntry, tolovHolati: 'kutilmoqda' } : e));
+                
+                toast.success('Tasdiqlash so\'rovi yuborildi', {
+                    description: 'Market tasdigini kutmoqda...'
+                });
+                return;
+            }
+        }
+
+        // For non-payment status changes or other updates, update directly
         const dbUpdate: any = {};
         if (updatedEntry.marketNomi !== undefined) dbUpdate.client = updatedEntry.marketNomi;
         if (updatedEntry.mahsulotTuri !== undefined) dbUpdate.mahsulot = updatedEntry.mahsulotTuri;

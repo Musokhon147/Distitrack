@@ -27,6 +27,7 @@ export const SimplifiedDashboard: React.FC = () => {
         narx: '',
         tolovHolati: "to'lanmagan"
     });
+    const [errors, setErrors] = useState<Record<string, boolean>>({});
 
     const formatNumber = (val: string | number) => {
         if (!val) return '';
@@ -40,12 +41,21 @@ export const SimplifiedDashboard: React.FC = () => {
     };
 
     const handleSubmit = () => {
-        if (!formData.marketNomi || !formData.mahsulotTuri || !formData.miqdori) {
-            toast.error('Iltimos, barcha maydonlarni to\'ldiring', {
+        const newErrors: Record<string, boolean> = {};
+        
+        if (!formData.marketNomi) newErrors.marketNomi = true;
+        if (!formData.mahsulotTuri) newErrors.mahsulotTuri = true;
+        if (!formData.miqdori) newErrors.miqdori = true;
+        
+        setErrors(newErrors);
+        
+        if (Object.keys(newErrors).length > 0) {
+            toast.error('Iltimos, barcha majburiy maydonlarni to\'ldiring', {
                 icon: <AlertCircle size={18} />
             });
             return;
         }
+        
         addEntry(formData);
         setFormData({
             marketNomi: '',
@@ -55,6 +65,7 @@ export const SimplifiedDashboard: React.FC = () => {
             narx: '',
             tolovHolati: "to'lanmagan"
         });
+        setErrors({});
         toast.success('Muvaffaqiyatli saqlandi!', {
             icon: <CheckCircle2 size={18} />
         });
@@ -130,9 +141,13 @@ export const SimplifiedDashboard: React.FC = () => {
                                             marketNomi: value,
                                             marketRaqami: selectedMarket?.phone || formData.marketRaqami
                                         });
+                                        if (errors.marketNomi) {
+                                            setErrors({ ...errors, marketNomi: false });
+                                        }
                                     }}
                                     options={markets.map(m => ({ id: m.id, value: m.name, label: m.name }))}
                                     placeholder="Marketni tanlang"
+                                    className={errors.marketNomi ? 'border-red-500 ring-2 ring-red-500/20' : ''}
                                 />
                             </motion.div>
 
@@ -143,9 +158,18 @@ export const SimplifiedDashboard: React.FC = () => {
                                 <input
                                     type="text"
                                     placeholder="+998"
-                                    className="w-full p-5 bg-white/50 border border-slate-200/50 dark:bg-slate-950/30 dark:border-slate-800/50 rounded-2xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none dark:text-white transition-all shadow-sm text-lg font-medium"
+                                    className={`w-full p-5 bg-white/50 border rounded-2xl focus:ring-4 focus:ring-primary-500/10 outline-none dark:text-white transition-all shadow-sm text-lg font-medium ${
+                                        errors.marketRaqami 
+                                            ? 'border-red-500 ring-2 ring-red-500/20 dark:border-red-500' 
+                                            : 'border-slate-200/50 dark:bg-slate-950/30 dark:border-slate-800/50 focus:border-primary-500'
+                                    }`}
                                     value={formData.marketRaqami}
-                                    onChange={(e) => setFormData({ ...formData, marketRaqami: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, marketRaqami: e.target.value });
+                                        if (errors.marketRaqami) {
+                                            setErrors({ ...errors, marketRaqami: false });
+                                        }
+                                    }}
                                 />
                             </motion.div>
 
@@ -154,9 +178,15 @@ export const SimplifiedDashboard: React.FC = () => {
                                     label="Mahsulot turi"
                                     icon={<Package size={14} />}
                                     value={formData.mahsulotTuri}
-                                    onChange={(value) => setFormData({ ...formData, mahsulotTuri: value })}
+                                    onChange={(value) => {
+                                        setFormData({ ...formData, mahsulotTuri: value });
+                                        if (errors.mahsulotTuri) {
+                                            setErrors({ ...errors, mahsulotTuri: false });
+                                        }
+                                    }}
                                     options={products.map(p => ({ id: p.id, value: p.name, label: p.name }))}
                                     placeholder="Mahsulotni tanlang"
+                                    className={errors.mahsulotTuri ? 'border-red-500 ring-2 ring-red-500/20' : ''}
                                 />
                             </motion.div>
 
@@ -167,10 +197,29 @@ export const SimplifiedDashboard: React.FC = () => {
                                 <input
                                     type="text"
                                     placeholder="Masalan: 50 kg"
-                                    className="w-full p-5 bg-white/50 border border-slate-200/50 dark:bg-slate-950/30 dark:border-slate-800/50 rounded-2xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none dark:text-white transition-all shadow-sm text-lg font-medium placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                                    className={`w-full p-5 bg-white/50 border rounded-2xl focus:ring-4 focus:ring-primary-500/10 outline-none dark:text-white transition-all shadow-sm text-lg font-medium placeholder:text-slate-300 dark:placeholder:text-slate-700 ${
+                                        errors.miqdori 
+                                            ? 'border-red-500 ring-2 ring-red-500/20 dark:border-red-500' 
+                                            : 'border-slate-200/50 dark:bg-slate-950/30 dark:border-slate-800/50 focus:border-primary-500'
+                                    }`}
                                     value={formData.miqdori}
-                                    onChange={(e) => setFormData({ ...formData, miqdori: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, miqdori: e.target.value });
+                                        if (errors.miqdori) {
+                                            setErrors({ ...errors, miqdori: false });
+                                        }
+                                    }}
                                 />
+                                {errors.miqdori && (
+                                    <motion.p 
+                                        initial={{ opacity: 0, y: -5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="text-xs text-red-500 font-medium ml-1 flex items-center gap-1"
+                                    >
+                                        <AlertCircle size={12} />
+                                        Majburiy maydon
+                                    </motion.p>
+                                )}
                             </motion.div>
 
                             <motion.div variants={itemVariants} className="space-y-3">

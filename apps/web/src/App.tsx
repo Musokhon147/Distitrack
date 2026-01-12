@@ -21,11 +21,31 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'sonner';
 import { LoadingScreen } from './components/ui/LoadingScreen';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 function App() {
     return (
-        <ThemeProvider>
-            <Toaster position="top-center" richColors />
+        <ErrorBoundary>
+            <ThemeProvider>
+                <Toaster 
+                position="top-center" 
+                richColors 
+                toastOptions={{
+                    className: 'shadow-2xl border border-white/20 backdrop-blur-xl',
+                    style: {
+                        background: 'rgba(255, 255, 255, 0.95)',
+                        backdropFilter: 'blur(12px)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '16px',
+                    },
+                    classNames: {
+                        toast: 'shadow-2xl',
+                        success: 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800',
+                        error: 'bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-800',
+                        info: 'bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800',
+                    }
+                }}
+            />
             <AuthProvider>
                 <EntryProvider>
                     <MarketProvider>
@@ -38,6 +58,7 @@ function App() {
                 </EntryProvider>
             </AuthProvider>
         </ThemeProvider>
+        </ErrorBoundary>
     );
 }
 

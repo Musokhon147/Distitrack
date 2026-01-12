@@ -15,6 +15,7 @@ interface CustomSelectProps {
     placeholder: string;
     icon?: React.ReactNode;
     label: string;
+    className?: string;
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -23,7 +24,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     options,
     placeholder,
     icon,
-    label
+    label,
+    className = ''
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -50,10 +52,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                 <button
                     type="button"
                     onClick={() => setIsOpen(!isOpen)}
-                    className={`w-full p-5 bg-white/50 dark:bg-slate-950/30 border rounded-2xl outline-none transition-all shadow-sm text-lg font-medium flex items-center justify-between group ${isOpen
-                        ? 'border-indigo-500 ring-4 ring-indigo-500/10'
-                        : 'border-slate-200/50 dark:border-slate-800/50 hover:border-indigo-500/50'
-                        }`}
+                    className={`w-full p-5 bg-white/50 dark:bg-slate-950/30 border rounded-2xl outline-none transition-all shadow-sm text-lg font-medium flex items-center justify-between group ${
+                        isOpen
+                            ? 'border-indigo-500 ring-4 ring-indigo-500/10'
+                            : className || 'border-slate-200/50 dark:border-slate-800/50 hover:border-indigo-500/50'
+                    }`}
                 >
                     <span className={selectedOption ? "text-slate-900 dark:text-white" : "text-slate-300 dark:text-slate-700"}>
                         {selectedOption ? selectedOption.label : placeholder}

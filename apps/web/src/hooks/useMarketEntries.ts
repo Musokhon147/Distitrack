@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,17 +20,12 @@ export const useMarketEntries = () => {
     const [entries, setEntries] = useState<MarketEntry[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (profile?.market_id) {
-            fetchMarketEntries();
-        } else {
+    const fetchMarketEntries = useCallback(async () => {
+        if (!profile?.market_id) {
             setEntries([]);
             setLoading(false);
+            return;
         }
-    }, [profile?.market_id]);
-
-    const fetchMarketEntries = async () => {
-        if (!profile?.market_id) return;
         
         setLoading(true);
         try {
@@ -43,6 +38,7 @@ export const useMarketEntries = () => {
 
             if (marketError) {
                 console.error('Error fetching market:', marketError);
+                setEntries([]);
                 setLoading(false);
                 return;
             }
@@ -50,11 +46,13 @@ export const useMarketEntries = () => {
             const marketName = marketData?.name;
 
             if (!marketName) {
+                setEntries([]);
                 setLoading(false);
                 return;
             }
 
             // Fetch entries where client (market name) matches
+            // Using single() with .select() to ensure fresh data (no cache)
             const { data: entriesData, error: entriesError } = await supabase
                 .from('entries')
                 .select('id, user_id, client, mahsulot, miqdor, narx, summa, holat, sana, created_at')
@@ -63,6 +61,7 @@ export const useMarketEntries = () => {
 
             if (entriesError) {
                 console.error('Error fetching entries:', entriesError);
+                setEntries([]);
                 setLoading(false);
                 return;
             }
@@ -107,10 +106,15 @@ export const useMarketEntries = () => {
             setEntries(mappedEntries);
         } catch (error) {
             console.error('Error in fetchMarketEntries:', error);
+            setEntries([]);
         } finally {
             setLoading(false);
         }
-    };
+    }, [profile?.market_id]);
+
+    useEffect(() => {
+        fetchMarketEntries();
+    }, [fetchMarketEntries]);
 
     return { entries, loading, refreshEntries: fetchMarketEntries };
 };

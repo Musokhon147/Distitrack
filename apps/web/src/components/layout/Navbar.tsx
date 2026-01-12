@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export const Navbar: React.FC = () => {
     const { isDark, toggleTheme, accentColor, setAccentColor } = useTheme();
-    const { logout, user } = useAuth();
+    const { logout, user, profile } = useAuth();
     const [showColorPicker, setShowColorPicker] = useState(false);
 
     const colors = [
@@ -35,34 +35,21 @@ export const Navbar: React.FC = () => {
                             <Book size={24} />
                             Daftar
                         </NavLink>
-                        <NavLink
-                            to="/records"
-                            className={({ isActive }) => `
-                            flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base sm:text-lg
-                            ${isActive
-                                    ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/30'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}
-                        `}
-                        >
-                            <History size={24} />
-                            Tarix
-                        </NavLink>
-                        <NavLink
-                            to="/hisobot"
-                            className={({ isActive }) => `
-                            flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base sm:text-lg
-                            ${isActive
-                                    ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}
-                        `}
-                        >
-                            <PieChart size={24} />
-                            Hisob-kitob
-                        </NavLink>
-
-                        {/* Only show Marketlar and Mahsulotlar for Seller role */}
-                        {user?.user_metadata?.role !== 'market' && (
+                        {/* Only show Tarix, Marketlar, and Mahsulotlar for Seller role */}
+                        {profile?.role !== 'market' && (
                             <>
+                                <NavLink
+                                    to="/records"
+                                    className={({ isActive }) => `
+                                    flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base sm:text-lg
+                                    ${isActive
+                                            ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/30'
+                                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}
+                                `}
+                                >
+                                    <History size={24} />
+                                    Tarix
+                                </NavLink>
                                 <NavLink
                                     to="/markets"
                                     className={({ isActive }) => `
@@ -89,6 +76,18 @@ export const Navbar: React.FC = () => {
                                 </NavLink>
                             </>
                         )}
+                        <NavLink
+                            to="/hisobot"
+                            className={({ isActive }) => `
+                            flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base sm:text-lg
+                            ${isActive
+                                    ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}
+                        `}
+                        >
+                            <PieChart size={24} />
+                            Hisob-kitob
+                        </NavLink>
                     </div>
 
                     <div className="flex items-center gap-2">

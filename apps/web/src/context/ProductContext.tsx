@@ -1,38 +1,105 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product } from '@distitrack/common';
+import { supabase } from '../lib/supabase';
+import { toast } from 'sonner';
+import { useAuth } from './AuthContext';
 
 interface ProductContextType {
     products: Product[];
-    addProduct: (product: Omit<Product, 'id'>) => void;
-    deleteProduct: (id: string) => void;
+    loading: boolean;
+    addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
+    deleteProduct: (id: string) => Promise<void>;
+    refreshProducts: () => Promise<void>;
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
 export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [products, setProducts] = useState<Product[]>(() => {
-        const saved = localStorage.getItem('products');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
 
-    useEffect(() => {
-        localStorage.setItem('products', JSON.stringify(products));
-    }, [products]);
+    const fetchProducts = async () => {
+        if (!user) {
+            setProducts([]);
+            setLoading(false);
+            return;
+        }
 
-    const addProduct = (product: Omit<Product, 'id'>) => {
-        const newProduct: Product = {
-            ...product,
-            id: Date.now().toString(),
-        };
-        setProducts(prev => [...prev, newProduct]);
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('products')
+                .select('*')
+                .order('name', { ascending: true });
+
+            if (error) throw error;
+            setProducts(data || []);
+        } catch (error: any) {
+            console.error('Error fetching products:', error);
+            // If table doesn't exist, start with empty array
+            if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+                console.warn('Products table does not exist yet. Please create it in Supabase.');
+                setProducts([]);
+            } else {
+                toast.error('Mahsulotlarni yuklashda xatolik');
+            }
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const deleteProduct = (id: string) => {
-        setProducts(prev => prev.filter(p => p.id !== id));
+    useEffect(() => {
+        if (user) {
+            fetchProducts();
+        } else {
+            setProducts([]);
+            setLoading(false);
+        }
+    }, [user]);
+
+    const addProduct = async (product: Omit<Product, 'id'>) => {
+        try {
+            const { data, error } = await supabase
+                .from('products')
+                .insert([{ name: product.name }])
+                .select()
+                .single();
+
+            if (error) throw error;
+            
+            const newProduct: Product = {
+                id: data.id,
+                name: data.name,
+            };
+            setProducts(prev => [...prev, newProduct]);
+            toast.success('Mahsulot muvaffaqiyatli qo\'shildi');
+        } catch (error: any) {
+            console.error('Error adding product:', error);
+            toast.error('Mahsulot qo\'shishda xatolik: ' + (error.message || 'Noma\'lum xatolik'));
+            throw error;
+        }
+    };
+
+    const deleteProduct = async (id: string) => {
+        try {
+            const { error } = await supabase
+                .from('products')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            setProducts(prev => prev.filter(p => p.id !== id));
+            toast.success('Mahsulot o\'chirildi');
+        } catch (error: any) {
+            console.error('Error deleting product:', error);
+            toast.error('Mahsulot o\'chirishda xatolik: ' + (error.message || 'Noma\'lum xatolik'));
+            throw error;
+        }
     };
 
     return (
-        <ProductContext.Provider value={{ products, addProduct, deleteProduct }}>
+        <ProductContext.Provider value={{ products, loading, addProduct, deleteProduct, refreshProducts: fetchProducts }}>
             {children}
         </ProductContext.Provider>
     );

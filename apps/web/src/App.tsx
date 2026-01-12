@@ -18,8 +18,9 @@ import { MarketProvider } from './context/MarketContext';
 import { ProductProvider } from './context/ProductContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
-
+import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'sonner';
+import { LoadingScreen } from './components/ui/LoadingScreen';
 
 function App() {
     return (
@@ -55,9 +56,6 @@ function ProtectedRoute({ children, role }: { children: React.ReactNode, role?: 
 
     return <>{children}</>;
 }
-
-import { AnimatePresence } from 'framer-motion';
-import { LoadingScreen } from './components/ui/LoadingScreen';
 
 function AppContent() {
     const location = useLocation();

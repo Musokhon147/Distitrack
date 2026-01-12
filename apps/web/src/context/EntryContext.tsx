@@ -57,45 +57,52 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const addEntry = async (entry: Omit<Entry, 'id' | 'sana'>) => {
         if (!user) return;
 
-        // Calculate summa (simple heuristic)
-        const price = parseFloat(entry.narx.replace(/,/g, '')) || 0;
-        const qty = parseFloat(entry.miqdori.replace(/\D/g, '')) || 0;
-        const summa = (price * qty).toString();
-
-        const dbEntry = {
-            user_id: user.id,
-            client: entry.marketNomi,
-            mahsulot: entry.mahsulotTuri,
-            miqdor: entry.miqdori,
-            narx: entry.narx,
-            holat: entry.tolovHolati,
-            izoh: entry.marketRaqami, // Mapping phone to izoh
-            summa: summa,
-            sana: new Date().toISOString().split('T')[0]
-        };
-
-        const { data, error } = await supabase
-            .from('entries')
-            .insert([dbEntry])
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error adding entry:', error);
-            alert(`Error saving: ${error.message}`);
-        } else if (data) {
-            // Map back to Frontend Entry
-            const newEntry: Entry = {
-                id: data.id,
-                marketNomi: data.client,
-                marketRaqami: data.izoh || '',
-                mahsulotTuri: data.mahsulot,
-                miqdori: data.miqdor,
-                narx: data.narx,
-                tolovHolati: data.holat as any,
-                sana: data.sana,
+        try {
+            // Price (narx) is already the total price for the order, not per unit
+            const priceStr = entry.narx.replace(/[^\d.]/g, '') || '0';
+            const price = parseFloat(priceStr) || 0;
+            
+            // Save ALL information to Supabase including price
+            // Note: narx is the total price, summa should be the same as narx
+            const dbEntry = {
+                user_id: user.id, // Seller ID
+                client: entry.marketNomi, // Market name
+                mahsulot: entry.mahsulotTuri, // Product name
+                miqdor: entry.miqdori, // Quantity
+                narx: entry.narx, // Total price (saved as string for display)
+                holat: entry.tolovHolati, // Payment status
+                izoh: entry.marketRaqami, // Phone number/notes
+                summa: entry.narx, // Total amount (same as price since price is total)
+                sana: new Date().toISOString().split('T')[0], // Date
+                created_at: new Date().toISOString() // Timestamp
             };
-            setEntries([newEntry, ...entries]);
+
+            const { data, error } = await supabase
+                .from('entries')
+                .insert([dbEntry])
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Error adding entry:', error);
+                alert(`Error saving: ${error.message}`);
+            } else if (data) {
+                // Map back to Frontend Entry
+                const newEntry: Entry = {
+                    id: data.id,
+                    marketNomi: data.client,
+                    marketRaqami: data.izoh || '',
+                    mahsulotTuri: data.mahsulot,
+                    miqdori: data.miqdor,
+                    narx: data.narx,
+                    tolovHolati: data.holat as any,
+                    sana: data.sana,
+                };
+                setEntries([newEntry, ...entries]);
+            }
+        } catch (error: any) {
+            console.error('Error in addEntry:', error);
+            alert(`Error saving: ${error.message || 'Noma\'lum xatolik'}`);
         }
     };
 

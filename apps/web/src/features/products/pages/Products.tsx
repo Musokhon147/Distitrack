@@ -10,11 +10,15 @@ export const Products: React.FC = () => {
     const [newProduct, setNewProduct] = useState({ name: '' });
     const [searchTerm, setSearchTerm] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newProduct.name) {
-            addProduct(newProduct);
-            setNewProduct({ name: '' });
+            try {
+                await addProduct(newProduct);
+                setNewProduct({ name: '' });
+            } catch (error) {
+                // Error is already handled in ProductContext with toast
+            }
         }
     };
 

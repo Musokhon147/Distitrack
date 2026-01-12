@@ -40,12 +40,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (error) throw error;
 
+            // Handle markets relation - it might be an array or object
+            const marketsData = data.markets as any;
+            const marketName = Array.isArray(marketsData) 
+                ? marketsData[0]?.name 
+                : marketsData?.name;
+
             setProfile({
                 id: data.id,
                 full_name: data.full_name,
                 role: data.role,
                 market_id: data.market_id,
-                market_name: data.markets?.name
+                market_name: marketName
             });
         } catch (error) {
             console.error('Error fetching profile:', error);
@@ -55,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         let mounted = true;
-        let timeoutId: NodeJS.Timeout;
+        let timeoutId: ReturnType<typeof setTimeout>;
 
         // Initialize auth state with timeout
         const initializeAuth = async () => {

@@ -21,6 +21,9 @@ export const RegisterScreen = () => {
     const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
     const [isMarketModalVisible, setIsMarketModalVisible] = useState(false);
     const [marketSearch, setMarketSearch] = useState('');
+    const [isAddingNewMarket, setIsAddingNewMarket] = useState(false);
+    const [newMarketName, setNewMarketName] = useState('');
+    const [newMarketPhone, setNewMarketPhone] = useState('');
 
     const { control, handleSubmit, formState: { errors }, getValues } = useForm<RegisterInput>({
         resolver: zodResolver(registerSchema),
@@ -45,8 +48,8 @@ export const RegisterScreen = () => {
     }, []);
 
     const onSubmit = async (data: RegisterInput) => {
-        if (selectedRole === 'market' && !selectedMarket) {
-            Alert.alert('Xatolik', "Iltimos, do'koningizni tanlang");
+        if (selectedRole === 'market' && !selectedMarket && !newMarketName.trim()) {
+            Alert.alert('Xatolik', "Iltimos, do'koningizni tanlang yoki yangi do'kon nomini kiriting");
             return;
         }
 
@@ -66,10 +69,27 @@ export const RegisterScreen = () => {
 
             // Create/update profile using RPC function to bypass RLS
             if (authData.user) {
+                let finalMarketId = selectedMarket?.id || null;
+
+                // If adding a new market, create it first
+                if (selectedRole === 'market' && isAddingNewMarket && newMarketName.trim()) {
+                    const { data: newMarketId, error: marketError } = await supabase
+                        .rpc('create_market', {
+                            market_name: newMarketName.trim(),
+                            market_phone: newMarketPhone.trim()
+                        });
+
+                    if (marketError) {
+                        console.error('Error creating market:', marketError);
+                        throw new Error('Do\'kon yaratishda xatolik: ' + marketError.message);
+                    }
+                    finalMarketId = newMarketId;
+                }
+
                 const { error: profileError } = await supabase.rpc('create_profile_for_new_user', {
                     user_id: authData.user.id,
                     user_role: selectedRole,
-                    user_market_id: selectedRole === 'market' ? selectedMarket?.id : null,
+                    user_market_id: selectedRole === 'market' ? finalMarketId : null,
                     user_full_name: data.full_name
                 });
 
@@ -289,42 +309,106 @@ export const RegisterScreen = () => {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Do'konni tanlang</Text>
-                            <TouchableOpacity onPress={() => setIsMarketModalVisible(false)}>
+                            <Text style={styles.modalTitle}>
+                                {isAddingNewMarket ? "Yangi do'kon qo'shish" : "Do'konni tanlang"}
+                            </Text>
+                            <TouchableOpacity onPress={() => {
+                                setIsMarketModalVisible(false);
+                                setIsAddingNewMarket(false);
+                            }}>
                                 <Text style={styles.closeButton}>Yopish</Text>
                             </TouchableOpacity>
                         </View>
 
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder="Qidirish..."
-                            value={marketSearch}
-                            onChangeText={setMarketSearch}
-                        />
-
-                        <FlatList
-                            data={filteredMarkets}
-                            keyExtractor={(item) => item.id}
-                            renderItem={({ item }) => (
+                        {isAddingNewMarket ? (
+                            <>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>Do'kon nomi</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Do'kon nomini kiriting..."
+                                        placeholderTextColor="#94a3b8"
+                                        value={newMarketName}
+                                        onChangeText={setNewMarketName}
+                                    />
+                                </View>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>Telefon raqami</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="+998 90 123 45 67"
+                                        placeholderTextColor="#94a3b8"
+                                        value={newMarketPhone}
+                                        onChangeText={setNewMarketPhone}
+                                        keyboardType="phone-pad"
+                                    />
+                                </View>
                                 <TouchableOpacity
-                                    style={styles.marketItem}
+                                    style={[styles.button, { backgroundColor: '#10b981' }]}
                                     onPress={() => {
-                                        setSelectedMarket(item);
+                                        if (!newMarketName.trim()) {
+                                            Alert.alert('Xatolik', "Do'kon nomini kiriting");
+                                            return;
+                                        }
+                                        setSelectedMarket(null);
                                         setIsMarketModalVisible(false);
                                     }}
                                 >
-                                    <Text style={[
-                                        styles.marketItemText,
-                                        selectedMarket?.id === item.id && { color: themeColor, fontWeight: 'bold' }
-                                    ]}>
-                                        {item.name}
-                                    </Text>
+                                    <Text style={styles.buttonText}>Saqlash</Text>
                                 </TouchableOpacity>
-                            )}
-                            ListEmptyComponent={
-                                <Text style={styles.emptyText}>Do'kon topilmadi</Text>
-                            }
-                        />
+                                <TouchableOpacity onPress={() => {
+                                    setIsAddingNewMarket(false);
+                                    setNewMarketName('');
+                                    setNewMarketPhone('');
+                                }}>
+                                    <Text style={[styles.changeEmailText, { color: '#10b981' }]}>← Mavjud do'konlardan tanlash</Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <>
+                                <TextInput
+                                    style={styles.searchInput}
+                                    placeholder="Qidirish..."
+                                    value={marketSearch}
+                                    onChangeText={setMarketSearch}
+                                />
+
+                                <FlatList
+                                    data={filteredMarkets}
+                                    keyExtractor={(item) => item.id}
+                                    renderItem={({ item }) => (
+                                        <TouchableOpacity
+                                            style={styles.marketItem}
+                                            onPress={() => {
+                                                setSelectedMarket(item);
+                                                setIsAddingNewMarket(false);
+                                                setNewMarketName('');
+                                                setNewMarketPhone('');
+                                                setIsMarketModalVisible(false);
+                                            }}
+                                        >
+                                            <Text style={[
+                                                styles.marketItemText,
+                                                selectedMarket?.id === item.id && { color: themeColor, fontWeight: 'bold' }
+                                            ]}>
+                                                {item.name}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    ListEmptyComponent={
+                                        <Text style={styles.emptyText}>Do'kon topilmadi</Text>
+                                    }
+                                    ListFooterComponent={
+                                        <TouchableOpacity
+                                            style={[styles.addNewMarketBtn, { borderColor: '#10b981' }]}
+                                            onPress={() => setIsAddingNewMarket(true)}
+                                        >
+                                            <Text style={[styles.addNewMarketText, { color: '#10b981' }]}>+ Yangi do'kon qo'shish</Text>
+                                        </TouchableOpacity>
+                                    }
+                                />
+                            </>
+                        )}
                     </View>
                 </View>
             </Modal>
@@ -493,5 +577,17 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: '#94a3b8',
         marginTop: 20,
+    },
+    addNewMarketBtn: {
+        marginTop: 16,
+        paddingVertical: 16,
+        borderWidth: 2,
+        borderRadius: 12,
+        borderStyle: 'dashed',
+        alignItems: 'center',
+    },
+    addNewMarketText: {
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 });

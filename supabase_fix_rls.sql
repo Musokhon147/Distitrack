@@ -56,6 +56,24 @@ ALTER TABLE markets ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Authenticated users can view markets" ON markets;
 CREATE POLICY "Authenticated users can view markets" ON markets FOR SELECT TO authenticated USING (true);
 
--- Allow authenticated users to insert new markets (for registration)
-DROP POLICY IF EXISTS "Authenticated users can insert markets" ON markets;
-CREATE POLICY "Authenticated users can insert markets" ON markets FOR INSERT TO authenticated WITH CHECK (true);
+-- Allow anon users to view markets (needed for registration dropdown)
+DROP POLICY IF EXISTS "Anon users can view markets" ON markets;
+CREATE POLICY "Anon users can view markets" ON markets FOR SELECT TO anon USING (true);
+
+-- RPC function to create a market during registration (bypasses RLS)
+CREATE OR REPLACE FUNCTION create_market(market_name text)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  new_market_id uuid;
+BEGIN
+  INSERT INTO markets (name, phone)
+  VALUES (market_name, '')
+  RETURNING id INTO new_market_id;
+  
+  RETURN new_market_id;
+END;
+$$;

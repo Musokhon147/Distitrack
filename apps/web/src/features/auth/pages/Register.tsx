@@ -79,19 +79,16 @@ export const Register: React.FC = () => {
             if (authData.user) {
                 let finalMarketId = selectedMarketId;
 
-                // If adding a new market, create it first
+                // If adding a new market, create it first using RPC function
                 if (selectedRole === 'market' && isAddingNewMarket && newMarketName.trim()) {
-                    const { data: newMarket, error: marketError } = await supabase
-                        .from('markets')
-                        .insert([{ name: newMarketName.trim(), phone: '' }])
-                        .select('id')
-                        .single();
+                    const { data: newMarketId, error: marketError } = await supabase
+                        .rpc('create_market', { market_name: newMarketName.trim() });
 
                     if (marketError) {
                         console.error('Error creating market:', marketError);
                         throw new Error('Do\'kon yaratishda xatolik: ' + marketError.message);
                     }
-                    finalMarketId = newMarket.id;
+                    finalMarketId = newMarketId;
                 }
 
                 const { error: profileError } = await supabase.rpc('create_profile_for_new_user', {

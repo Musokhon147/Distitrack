@@ -55,3 +55,7 @@ CREATE POLICY "Users can view their own profile" ON profiles FOR SELECT TO authe
 ALTER TABLE markets ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Authenticated users can view markets" ON markets;
 CREATE POLICY "Authenticated users can view markets" ON markets FOR SELECT TO authenticated USING (true);
+
+-- Allow authenticated users to insert new markets (for registration)
+DROP POLICY IF EXISTS "Authenticated users can insert markets" ON markets;
+CREATE POLICY "Authenticated users can insert markets" ON markets FOR INSERT TO authenticated WITH CHECK (true);

@@ -25,6 +25,8 @@ export const Register: React.FC = () => {
     const [selectedMarketId, setSelectedMarketId] = useState<string>('');
     const [marketSearch, setMarketSearch] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isAddingNewMarket, setIsAddingNewMarket] = useState(false);
+    const [newMarketName, setNewMarketName] = useState('');
 
     // Form setup
     const { register, handleSubmit, formState: { errors }, getValues } = useForm<RegisterInput>({
@@ -52,8 +54,8 @@ export const Register: React.FC = () => {
     }, []);
 
     const onSubmit = async (data: RegisterInput) => {
-        if (selectedRole === 'market' && !selectedMarketId) {
-            setError('Iltimos, do\'koningizni tanlang');
+        if (selectedRole === 'market' && !selectedMarketId && !newMarketName.trim()) {
+            setError('Iltimos, do\'koningizni tanlang yoki yangi do\'kon nomini kiriting');
             return;
         }
 
@@ -75,10 +77,27 @@ export const Register: React.FC = () => {
 
             // Create/update profile using RPC function to bypass RLS
             if (authData.user) {
+                let finalMarketId = selectedMarketId;
+
+                // If adding a new market, create it first
+                if (selectedRole === 'market' && isAddingNewMarket && newMarketName.trim()) {
+                    const { data: newMarket, error: marketError } = await supabase
+                        .from('markets')
+                        .insert([{ name: newMarketName.trim(), phone: '' }])
+                        .select('id')
+                        .single();
+
+                    if (marketError) {
+                        console.error('Error creating market:', marketError);
+                        throw new Error('Do\'kon yaratishda xatolik: ' + marketError.message);
+                    }
+                    finalMarketId = newMarket.id;
+                }
+
                 const { error: profileError } = await supabase.rpc('create_profile_for_new_user', {
                     user_id: authData.user.id,
                     user_role: selectedRole,
-                    user_market_id: selectedRole === 'market' ? selectedMarketId : null,
+                    user_market_id: selectedRole === 'market' ? finalMarketId : null,
                     user_full_name: data.full_name
                 });
 
@@ -413,6 +432,8 @@ export const Register: React.FC = () => {
                                                                             type="button"
                                                                             onClick={() => {
                                                                                 setSelectedMarketId(market.id);
+                                                                                setIsAddingNewMarket(false);
+                                                                                setNewMarketName('');
                                                                                 setIsDropdownOpen(false);
                                                                             }}
                                                                             className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${selectedMarketId === market.id
@@ -426,11 +447,64 @@ export const Register: React.FC = () => {
                                                                 ) : (
                                                                     <p className="p-4 text-center text-sm text-slate-400">Do'kon topilmadi</p>
                                                                 )}
+                                                                {/* Add New Market Button */}
+                                                                <div className="border-t border-slate-100 dark:border-slate-800 mt-1 pt-1">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setIsAddingNewMarket(true);
+                                                                            setSelectedMarketId('');
+                                                                            setIsDropdownOpen(false);
+                                                                        }}
+                                                                        className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-2"
+                                                                    >
+                                                                        <span className="text-lg">+</span>
+                                                                        Yangi do'kon qo'shish
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </motion.div>
                                                     )}
                                                 </AnimatePresence>
                                             </div>
+
+                                            {/* New Market Name Input */}
+                                            <AnimatePresence>
+                                                {isAddingNewMarket && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, height: 0 }}
+                                                        animate={{ opacity: 1, height: 'auto' }}
+                                                        exit={{ opacity: 0, height: 0 }}
+                                                        className="mt-4 space-y-2"
+                                                    >
+                                                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
+                                                            Yangi do'kon nomi
+                                                        </label>
+                                                        <div className="relative group">
+                                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-emerald-500">
+                                                                <Store size={18} />
+                                                            </div>
+                                                            <input
+                                                                type="text"
+                                                                value={newMarketName}
+                                                                onChange={(e) => setNewMarketName(e.target.value)}
+                                                                className="w-full pl-11 pr-4 py-4 bg-white/50 border border-emerald-300 dark:bg-slate-950/30 dark:border-emerald-700 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all dark:text-white font-medium"
+                                                                placeholder="Do'kon nomini kiriting..."
+                                                            />
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setIsAddingNewMarket(false);
+                                                                setNewMarketName('');
+                                                            }}
+                                                            className="text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                                                        >
+                                                            ← Mavjud do'konlardan tanlash
+                                                        </button>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>

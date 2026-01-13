@@ -136,35 +136,35 @@ export const MarketDashboard: React.FC = () => {
 
     return (
         <PageTransition>
-            <div className="space-y-8">
-                {/* Welcome Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col md:flex-row md:items-center justify-between gap-6"
-                >
-                    <div>
-                        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white flex items-center gap-3">
-                            <Store className="text-emerald-500" size={32} />
-                            {profile?.market_name || "Do'kon"} Paneli
-                        </h1>
-                        <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                            Xush kelibsiz, {profile?.full_name}! Xaridlaringizni shu yerdan kuzatib boring.
-                        </p>
-                    </div>
+        <div className="space-y-8">
+            {/* Welcome Header */}
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col md:flex-row md:items-center justify-between gap-6"
+            >
+                <div>
+                    <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white flex items-center gap-3">
+                        <Store className="text-emerald-500" size={32} />
+                        {profile?.market_name || "Do'kon"} Paneli
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                        Xush kelibsiz, {profile?.full_name}! Xaridlaringizni shu yerdan kuzatib boring.
+                    </p>
+                </div>
 
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => signOut()}
-                            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"
-                        >
-                            <LogOut size={18} />
-                            Chiqish
-                        </button>
-                    </div>
-                </motion.div>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => signOut()}
+                        className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm"
+                    >
+                        <LogOut size={18} />
+                        Chiqish
+                    </button>
+                </div>
+            </motion.div>
 
-                {/* Stats Grid */}
+            {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {stats.map((stat, index) => {
                         const colorClasses = {
@@ -175,28 +175,28 @@ export const MarketDashboard: React.FC = () => {
                         const colorClass = colorClasses[stat.color as keyof typeof colorClasses] || colorClasses.emerald;
 
                         return (
-                            <motion.div
-                                key={stat.label}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                                className="glass-card p-6 rounded-3xl border border-white/20 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all group"
-                            >
-                                <div className="flex justify-between items-start mb-4">
+                    <motion.div
+                        key={stat.label}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="glass-card p-6 rounded-3xl border border-white/20 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all group"
+                    >
+                        <div className="flex justify-between items-start mb-4">
                                     <div className={`p-3 rounded-2xl ${colorClass} group-hover:scale-110 transition-transform`}>
-                                        {stat.icon}
-                                    </div>
+                                {stat.icon}
+                            </div>
                                     {stat.growth && (
-                                        <div className="flex items-center gap-1 text-emerald-500 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded-full">
-                                            <ArrowUpRight size={14} />
+                            <div className="flex items-center gap-1 text-emerald-500 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded-full">
+                                <ArrowUpRight size={14} />
                                             {stat.growth}%
-                                        </div>
+                            </div>
                                     )}
-                                </div>
-                                <h3 className="text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-wider">
-                                    {stat.label}
-                                </h3>
-                                <p className="text-3xl font-black text-slate-900 dark:text-white mt-1">
+                        </div>
+                        <h3 className="text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-wider">
+                            {stat.label}
+                        </h3>
+                        <p className="text-3xl font-black text-slate-900 dark:text-white mt-1">
                                     {stat.color === 'blue' && stat.value && stat.value.includes(',') ? (
                                         <AnimatedCounter 
                                             value={parseFloat(stat.value.replace(/,/g, '')) || 0} 
@@ -206,7 +206,7 @@ export const MarketDashboard: React.FC = () => {
                                     ) : (
                                         stat.value || '0'
                                     )}
-                                </p>
+                        </p>
                                 {stat.subtitle && (
                                     <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                                         {stat.subtitle}
@@ -341,22 +341,22 @@ export const MarketDashboard: React.FC = () => {
                                                 </motion.button>
                                             </div>
                                         </div>
-                                    </motion.div>
-                                ))}
+                    </motion.div>
+                ))}
                             </AnimatePresence>
-                        </div>
+            </div>
                     </motion.div>
                 )}
 
                 {/* Entries List */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="glass-card rounded-[2.5rem] p-8 border border-white/20 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl shadow-xl"
-                >
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Oxirgi xaridlar</h2>
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="glass-card rounded-[2.5rem] p-8 border border-white/20 dark:border-slate-800/50 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl shadow-xl"
+            >
+                <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Oxirgi xaridlar</h2>
                         <Tooltip content="Ma'lumotlarni yangilash" position="bottom">
                             <button 
                                 onClick={refreshEntries}
@@ -451,20 +451,20 @@ export const MarketDashboard: React.FC = () => {
                                                     <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Narxi</p>
                                                     <p className="text-sm font-bold text-primary-600 dark:text-primary-400">{formatNumber(entry.price)} so'm</p>
                                                 </div>
-                                            </div>
+                </div>
 
                                             {/* Status */}
                                             <div className="flex justify-end">
                                                 {getStatusBadge(entry.payment_status)}
-                                            </div>
-                                        </div>
+                    </div>
+                </div>
                                     </motion.div>
                                 ))}
                             </AnimatePresence>
                         </div>
                     )}
-                </motion.div>
-            </div>
+            </motion.div>
+        </div>
         </PageTransition>
     );
 };

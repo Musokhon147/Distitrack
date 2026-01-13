@@ -27,6 +27,7 @@ export const Register: React.FC = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isAddingNewMarket, setIsAddingNewMarket] = useState(false);
     const [newMarketName, setNewMarketName] = useState('');
+    const [newMarketPhone, setNewMarketPhone] = useState('');
 
     // Form setup
     const { register, handleSubmit, formState: { errors }, getValues } = useForm<RegisterInput>({
@@ -82,7 +83,10 @@ export const Register: React.FC = () => {
                 // If adding a new market, create it first using RPC function
                 if (selectedRole === 'market' && isAddingNewMarket && newMarketName.trim()) {
                     const { data: newMarketId, error: marketError } = await supabase
-                        .rpc('create_market', { market_name: newMarketName.trim() });
+                        .rpc('create_market', {
+                            market_name: newMarketName.trim(),
+                            market_phone: newMarketPhone.trim()
+                        });
 
                     if (marketError) {
                         console.error('Error creating market:', marketError);
@@ -489,13 +493,29 @@ export const Register: React.FC = () => {
                                                                 placeholder="Do'kon nomini kiriting..."
                                                             />
                                                         </div>
+                                                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1 mt-3 block">
+                                                            Telefon raqami
+                                                        </label>
+                                                        <div className="relative group">
+                                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-emerald-500">
+                                                                <span className="text-sm font-bold">📞</span>
+                                                            </div>
+                                                            <input
+                                                                type="tel"
+                                                                value={newMarketPhone}
+                                                                onChange={(e) => setNewMarketPhone(e.target.value)}
+                                                                className="w-full pl-11 pr-4 py-4 bg-white/50 border border-emerald-300 dark:bg-slate-950/30 dark:border-emerald-700 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all dark:text-white font-medium"
+                                                                placeholder="+998 90 123 45 67"
+                                                            />
+                                                        </div>
                                                         <button
                                                             type="button"
                                                             onClick={() => {
                                                                 setIsAddingNewMarket(false);
                                                                 setNewMarketName('');
+                                                                setNewMarketPhone('');
                                                             }}
-                                                            className="text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                                                            className="text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors mt-2"
                                                         >
                                                             ← Mavjud do'konlardan tanlash
                                                         </button>

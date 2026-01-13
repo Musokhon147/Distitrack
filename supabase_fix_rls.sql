@@ -61,7 +61,7 @@ DROP POLICY IF EXISTS "Anon users can view markets" ON markets;
 CREATE POLICY "Anon users can view markets" ON markets FOR SELECT TO anon USING (true);
 
 -- RPC function to create a market during registration (bypasses RLS)
-CREATE OR REPLACE FUNCTION create_market(market_name text)
+CREATE OR REPLACE FUNCTION create_market(market_name text, market_phone text DEFAULT '')
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -71,7 +71,7 @@ DECLARE
   new_market_id uuid;
 BEGIN
   INSERT INTO markets (name, phone)
-  VALUES (market_name, '')
+  VALUES (market_name, market_phone)
   RETURNING id INTO new_market_id;
   
   RETURN new_market_id;

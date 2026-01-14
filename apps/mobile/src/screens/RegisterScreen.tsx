@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
+import { Eye, EyeOff } from 'lucide-react-native';
 
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,6 +26,7 @@ export const RegisterScreen = () => {
     const [isAddingNewMarket, setIsAddingNewMarket] = useState(false);
     const [newMarketName, setNewMarketName] = useState('');
     const [newMarketPhone, setNewMarketPhone] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     const { control, handleSubmit, formState: { errors }, getValues } = useForm<RegisterInput>({
         resolver: zodResolver(registerSchema),
@@ -227,14 +229,19 @@ export const RegisterScreen = () => {
                                         control={control}
                                         name="password"
                                         render={({ field: { onChange, value } }) => (
-                                            <TextInput
-                                                style={[styles.input, errors.password && styles.inputError]}
-                                                placeholder="••••••••"
-                                                placeholderTextColor="#94a3b8"
-                                                secureTextEntry={true}
-                                                value={value}
-                                                onChangeText={onChange}
-                                            />
+                                            <View style={[styles.inputWrapper, { flexDirection: 'row', alignItems: 'center' }, errors.password && styles.inputError]}>
+                                                <TextInput
+                                                    style={styles.passwordInput}
+                                                    placeholder="••••••••"
+                                                    placeholderTextColor="#94a3b8"
+                                                    secureTextEntry={!showPassword}
+                                                    value={value}
+                                                    onChangeText={onChange}
+                                                />
+                                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                                                    {showPassword ? <EyeOff size={20} color="#94a3b8" /> : <Eye size={20} color="#94a3b8" />}
+                                                </TouchableOpacity>
+                                            </View>
                                         )}
                                     />
                                     {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
@@ -514,7 +521,7 @@ const styles = StyleSheet.create({
     otpInput: {
         textAlign: 'center',
         letterSpacing: 2,
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: 'bold',
     },
     button: {

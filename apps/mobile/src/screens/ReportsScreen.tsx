@@ -47,11 +47,24 @@ export const ReportsScreen = () => {
         if (!user) return;
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('entries')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
+            // Get user role first
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role, full_name')
+                .eq('id', user.id)
+                .single();
+
+            let query = supabase.from('entries').select('*').order('created_at', { ascending: false });
+
+            if (profile?.role === 'market') {
+                // If market, filter by market name (client field in entries)
+                query = query.eq('client', profile.full_name);
+            } else {
+                // If seller, filter by user_id
+                query = query.eq('user_id', user.id);
+            }
+
+            const { data, error } = await query;
 
             if (error) throw error;
             setEntries(data || []);
@@ -145,7 +158,20 @@ export const ReportsScreen = () => {
                                     </View>
                                     <View style={styles.entryMain}>
                                         <Text style={styles.entryProduct}>{entry.mahsulot}</Text>
-                                        <Text style={styles.entryMarket}>{entry.client}</Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                            <Text style={styles.entryMarket}>{entry.client}</Text>
+                                            <View style={[
+                                                styles.statusBadge,
+                                                { backgroundColor: entry.holat === "to'langan" ? '#f0fdf4' : '#fef2f2' }
+                                            ]}>
+                                                <Text style={[
+                                                    styles.statusText,
+                                                    { color: entry.holat === "to'langan" ? '#10b981' : '#ef4444' }
+                                                ]}>
+                                                    {entry.holat === "to'langan" ? "To'langan" : "To'lanmagan"}
+                                                </Text>
+                                            </View>
+                                        </View>
                                     </View>
                                     <View style={styles.entryAmountBox}>
                                         <Text style={[styles.entryAmount, { color: entry.holat === "to'langan" ? '#10b981' : '#ef4444' }]}>
@@ -318,6 +344,15 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#94a3b8',
         fontWeight: '500',
+    },
+    statusBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 6,
+    },
+    statusText: {
+        fontSize: 10,
+        fontWeight: '700',
     },
     entryAmountBox: {
         alignItems: 'flex-end',

@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginInput } from '@distitrack/common';
+import { Eye, EyeOff } from 'lucide-react-native';
 
 type AuthRole = 'seller' | 'market';
 
@@ -16,6 +17,7 @@ export const LoginScreen = () => {
     });
     const [loading, setLoading] = useState(false);
     const [selectedRole, setSelectedRole] = useState<AuthRole>('seller');
+    const [showPassword, setShowPassword] = useState(false);
     const navigation = useNavigation<any>();
 
     const onSubmit = async (data: LoginInput) => {
@@ -130,14 +132,19 @@ export const LoginScreen = () => {
                             control={control}
                             name="password"
                             render={({ field: { onChange, value } }) => (
-                                <TextInput
-                                    style={[styles.input, errors.password && styles.inputError]}
-                                    placeholder="••••••••"
-                                    placeholderTextColor="#94a3b8"
-                                    secureTextEntry={true}
-                                    value={value}
-                                    onChangeText={onChange}
-                                />
+                                <View style={[styles.inputWrapper, { flexDirection: 'row', alignItems: 'center' }, errors.password && styles.inputError]}>
+                                    <TextInput
+                                        style={styles.passwordInput}
+                                        placeholder="••••••••"
+                                        placeholderTextColor="#94a3b8"
+                                        secureTextEntry={!showPassword}
+                                        value={value}
+                                        onChangeText={onChange}
+                                    />
+                                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                                        {showPassword ? <EyeOff size={20} color="#94a3b8" /> : <Eye size={20} color="#94a3b8" />}
+                                    </TouchableOpacity>
+                                </View>
                             )}
                         />
                         {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
@@ -255,6 +262,21 @@ const styles = StyleSheet.create({
         padding: 16,
         fontSize: 16,
         color: '#0f172a',
+    },
+    inputWrapper: {
+        backgroundColor: '#f1f5f9',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        height: 56,
+    },
+    passwordInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#0f172a',
+        height: '100%',
+    },
+    eyeIcon: {
+        padding: 4,
     },
     inputError: {
         borderWidth: 1,

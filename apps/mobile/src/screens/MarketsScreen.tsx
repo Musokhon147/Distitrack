@@ -67,39 +67,6 @@ const Check = CheckIcon as any;
 
 const { width } = Dimensions.get('window');
 
-interface StatCardProps {
-    title: string;
-    amount: number;
-    color: [string, string, ...string[]];
-    icon: any;
-    delay?: number;
-}
-
-const StatCard = ({ title, amount, color, icon: Icon, delay = 0 }: StatCardProps) => (
-    <View
-        style={styles.statCard}
-    >
-        <LinearGradient
-            colors={color}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.statGradient}
-        >
-            <View style={styles.statHeader}>
-                <View style={styles.statIconContainer}>
-                    <Icon size={18} color="#fff" />
-                </View>
-                <TrendingUp size={14} color="rgba(255,255,255,0.4)" />
-            </View>
-            <View>
-                <Text style={styles.statValue}>
-                    {new Intl.NumberFormat('en-US').format(amount)}
-                </Text>
-                <Text style={styles.statLabel}>{title}</Text>
-            </View>
-        </LinearGradient>
-    </View>
-);
 
 interface MarketItemProps {
     item: {
@@ -194,15 +161,6 @@ export const MarketsScreen = () => {
         );
     };
 
-    const stats = useMemo(() => {
-        const total = entries.reduce((acc: number, curr) => acc + parseFloat(String(curr.narx || 0).replace(/[^\d.]/g, '')), 0);
-        const paid = entries.filter(e => e.tolovHolati === "to'langan")
-            .reduce((acc: number, curr) => acc + parseFloat(String(curr.narx || 0).replace(/[^\d.]/g, '')), 0);
-        const unpaid = entries.filter(e => e.tolovHolati === "to'lanmagan")
-            .reduce((acc: number, curr) => acc + parseFloat(String(curr.narx || 0).replace(/[^\d.]/g, '')), 0);
-        return { total, paid, unpaid };
-    }, [entries]);
-
     const filteredMarkets = (markets || []).filter(m =>
         m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         m.phone.includes(searchTerm)
@@ -228,29 +186,6 @@ export const MarketsScreen = () => {
                         <Plus size={24} color="#fff" />
                     </LinearGradient>
                 </TouchableOpacity>
-            </View>
-
-            <View style={styles.statsScrollContainer}>
-                <FlatList
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    data={[
-                        { title: 'Umumiy', val: stats.total, color: ['#4f46e5', '#3730a3'], icon: Briefcase },
-                        { title: "To'langan", val: stats.paid, color: ['#10b981', '#059669'], icon: DollarSign },
-                        { title: 'Qarzlar', val: stats.unpaid, color: ['#f43f5e', '#e11d48'], icon: Clock },
-                    ]}
-                    renderItem={({ item, index }) => (
-                        <StatCard
-                            title={item.title}
-                            amount={item.val}
-                            color={item.color as any}
-                            icon={item.icon}
-                            delay={index * 100}
-                        />
-                    )}
-                    keyExtractor={item => item.title}
-                    contentContainerStyle={styles.statsList}
-                />
             </View>
 
             <View style={styles.searchSection}>
@@ -430,54 +365,6 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    statsScrollContainer: {
-        marginBottom: 24,
-    },
-    statsList: {
-        paddingHorizontal: 19,
-        paddingBottom: 10,
-    },
-    statCard: {
-        width: width * 0.4,
-        marginHorizontal: 5,
-        borderRadius: 24,
-        overflow: 'hidden',
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-    },
-    statGradient: {
-        padding: 20,
-        height: 150,
-        justifyContent: 'space-between',
-    },
-    statHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    statIconContainer: {
-        width: 36,
-        height: 36,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    statValue: {
-        fontSize: 18,
-        fontWeight: '900',
-        color: '#fff',
-    },
-    statLabel: {
-        fontSize: 12,
-        color: 'rgba(255,255,255,0.7)',
-        fontWeight: '700',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
     },
     searchSection: {
         paddingHorizontal: 24,

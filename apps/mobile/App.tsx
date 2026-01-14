@@ -23,12 +23,49 @@ import {
   Store,
   User as UserIcon,
   Package,
-  FileText
+  FileText,
+  Settings
 } from 'lucide-react-native';
 import { ReportsScreen } from './src/screens/ReportsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+function MarketTabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }: { route: any }) => ({
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#ffffff',
+          borderTopWidth: 1,
+          borderTopColor: '#f1f5f9',
+          height: Platform.OS === 'ios' ? 88 : 68,
+          paddingBottom: Platform.OS === 'ios' ? 30 : 12,
+          paddingTop: 12,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        tabBarActiveTintColor: '#10b981',
+        tabBarInactiveTintColor: '#94a3b8',
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '600',
+        },
+        tabBarIcon: ({ color, size }: { color: string; size: number }) => {
+          if (route.name === 'Asosiy') return <LayoutDashboard size={size} color={color} />;
+          if (route.name === 'Hisobot') return <FileText size={size} color={color} />;
+          if (route.name === 'Sozlamalar') return <Settings size={size} color={color} />;
+          return null;
+        },
+      })}
+    >
+      <Tab.Screen name="Asosiy" component={MarketDashboardScreen} />
+      <Tab.Screen name="Hisobot" component={ReportsScreen} />
+      <Tab.Screen name="Sozlamalar" component={ProfileScreen} />
+    </Tab.Navigator>
+  );
+}
 
 function TabNavigator() {
   return (
@@ -114,7 +151,7 @@ function AppNavigator() {
       {session ? (
         <>
           {userRole === 'market' ? (
-            <Stack.Screen name="MarketDashboard" component={MarketDashboardScreen} />
+            <Stack.Screen name="MarketMain" component={MarketTabNavigator} />
           ) : (
             <>
               <Stack.Screen name="Main" component={TabNavigator} />

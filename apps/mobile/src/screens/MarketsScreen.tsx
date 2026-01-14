@@ -11,7 +11,8 @@ import {
     Dimensions,
     Alert,
     Modal,
-    ActivityIndicator
+    ActivityIndicator,
+    Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -74,6 +75,7 @@ interface MarketItemProps {
         name: string;
         phone: string;
         debt: number;
+        avatar_url?: string;
     };
     index: number;
 }
@@ -91,12 +93,16 @@ const AnimatedMarketItem = ({ item, index, onDelete }: MarketItemProps & { onDel
         >
             <TouchableOpacity style={styles.marketCard} activeOpacity={0.7}>
                 <View style={styles.marketIconContainer}>
-                    <LinearGradient
-                        colors={['#f8fafc', '#f1f5f9']}
-                        style={styles.marketIconInner}
-                    >
-                        <Store size={22} color="#4f46e5" />
-                    </LinearGradient>
+                    {item.avatar_url ? (
+                        <Image source={{ uri: item.avatar_url }} style={styles.marketAvatar} />
+                    ) : (
+                        <LinearGradient
+                            colors={['#f8fafc', '#f1f5f9']}
+                            style={styles.marketIconInner}
+                        >
+                            <Store size={22} color="#4f46e5" />
+                        </LinearGradient>
+                    )}
                 </View>
 
                 <View style={styles.marketInfo}>
@@ -415,6 +421,13 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+    },
+    marketAvatar: {
+        width: 52,
+        height: 52,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: '#f1f5f9',
     },

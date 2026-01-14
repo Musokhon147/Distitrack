@@ -305,12 +305,12 @@ export const Records: React.FC = () => {
                             </div>
                         ))
                     ) : filteredEntries.length === 0 ? (
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             className="py-20 text-center bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700"
                         >
-                            <motion.div 
+                            <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
@@ -407,7 +407,14 @@ export const Records: React.FC = () => {
                                                             label="Holat"
                                                             value={editForm.tolovHolati || ''}
                                                             placeholder="Holatni tanlang"
-                                                            onChange={(val) => setEditForm({ ...editForm, tolovHolati: val as any })}
+                                                            onChange={(val) => {
+                                                                const originalEntry = entries.find(e => e.id === editingId);
+                                                                if (originalEntry?.tolovHolati === "to'langan" && val === "to'lanmagan") {
+                                                                    alert("To'langan statusini o'zgartirib bo'lmaydi");
+                                                                    return;
+                                                                }
+                                                                setEditForm({ ...editForm, tolovHolati: val as any });
+                                                            }}
                                                             options={[
                                                                 { id: '1', value: "to'langan", label: "To'langan" },
                                                                 { id: '2', value: "to'lanmagan", label: "To'lanmagan" }

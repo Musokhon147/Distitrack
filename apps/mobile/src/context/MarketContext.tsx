@@ -7,6 +7,7 @@ export interface Market {
     name: string;
     phone: string;
     address?: string;
+    avatar_url?: string;
 }
 
 interface MarketContextType {

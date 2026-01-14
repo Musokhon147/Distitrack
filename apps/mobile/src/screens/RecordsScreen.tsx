@@ -319,7 +319,13 @@ export const RecordsScreen = () => {
                                             styles.toggleBtn,
                                             editForm.tolovHolati === status && (status === "to'langan" ? styles.togglePaid : styles.toggleUnpaid)
                                         ]}
-                                        onPress={() => setEditForm(prev => ({ ...prev, tolovHolati: status as any }))}
+                                        onPress={() => {
+                                            if (editingEntry?.tolovHolati === "to'langan" && status === "to'lanmagan") {
+                                                Alert.alert("Taqiqlangan", "To'langan statusini o'zgartirib bo'lmaydi");
+                                                return;
+                                            }
+                                            setEditForm(prev => ({ ...prev, tolovHolati: status as any }))
+                                        }}
                                     >
                                         <Text style={[
                                             styles.toggleBtnText,

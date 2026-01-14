@@ -160,11 +160,26 @@ export const Hisobot: React.FC = () => {
                                     >
                                         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                                             <div className="flex items-center gap-4 w-full lg:w-auto">
-                                                <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl group-hover:scale-110 transition-transform hidden sm:block">
-                                                    <Calendar size={24} />
-                                                </div>
+                                                {entry.sellerAvatar ? (
+                                                    <img
+                                                        src={entry.sellerAvatar}
+                                                        alt={entry.sellerName}
+                                                        className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-700"
+                                                    />
+                                                ) : (
+                                                    <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl group-hover:scale-110 transition-transform hidden sm:block">
+                                                        <Calendar size={24} />
+                                                    </div>
+                                                )}
                                                 <div className="flex-1 min-w-0">
-                                                    <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">{entry.marketNomi}</h3>
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">{entry.marketNomi}</h3>
+                                                        {entry.sellerName && (
+                                                            <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-md font-medium">
+                                                                {entry.sellerName}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <div className="flex items-center gap-3 text-sm text-slate-400 font-mono mt-1">
                                                         <span>{entry.marketRaqami}</span>
                                                         <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />

@@ -31,25 +31,42 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const fetchEntries = async () => {
         setLoading(true);
         // Optimize: select only needed fields instead of *
-        const { data, error } = await supabase
+        const { data: entriesData, error: entriesError } = await supabase
             .from('entries')
             .select('id, client, izoh, mahsulot, miqdor, narx, holat, sana, created_at, user_id')
             .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error('Error fetching entries:', error);
-        } else if (data) {
+        if (entriesError) {
+            console.error('Error fetching entries:', entriesError);
+        } else if (entriesData) {
+            // Fetch profiles separately
+            const userIds = [...new Set(entriesData.map(e => e.user_id))].filter(Boolean);
+            let profilesMap: Record<string, any> = {};
+
+            if (userIds.length > 0) {
+                const { data: profilesData } = await supabase
+                    .from('profiles')
+                    .select('id, full_name, avatar_url')
+                    .in('id', userIds);
+
+                profilesMap = (profilesData || []).reduce((acc: any, p: any) => ({
+                    ...acc,
+                    [p.id]: p
+                }), {});
+            }
+
             // Map DB columns to Frontend Entry shape
-            const mappedEntries: Entry[] = data.map((row: any) => ({
+            const mappedEntries: Entry[] = entriesData.map((row: any) => ({
                 id: row.id,
                 marketNomi: row.client,
-                marketRaqami: row.izoh || '', // Using izoh for phone number based on assumption
+                marketRaqami: row.izoh || '',
                 mahsulotTuri: row.mahsulot,
                 miqdori: row.miqdor,
                 narx: row.narx,
                 tolovHolati: row.holat as any,
                 sana: row.sana,
-                // Any other fields needed?
+                sellerName: profilesMap[row.user_id]?.full_name,
+                sellerAvatar: profilesMap[row.user_id]?.avatar_url,
             }));
             setEntries(mappedEntries);
         }
@@ -63,7 +80,7 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             // Price (narx) is already the total price for the order, not per unit
             const priceStr = entry.narx.replace(/[^\d.]/g, '') || '0';
             const price = parseFloat(priceStr) || 0;
-            
+
             // Save ALL information to Supabase including price
             // Note: narx is the total price, summa should be the same as narx
             const dbEntry = {
@@ -113,7 +130,7 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         // Check if payment status is being changed to 'to'langan'
         const isChangingToPaid = updatedEntry.tolovHolati === "to'langan";
-        
+
         if (isChangingToPaid) {
             // Get the current entry to check its status
             const currentEntry = entries.find(e => e.id === id);
@@ -176,7 +193,7 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                             .from('entries')
                             .update({ holat: "to'langan" })
                             .eq('id', id);
-                        
+
                         if (directUpdateError) {
                             console.error('Error updating entry:', directUpdateError);
                             alert(`Xatolik: ${directUpdateError.message}`);
@@ -222,7 +239,7 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
                 // Update local state to show "kutilmoqda" (waiting) status
                 setEntries(entries.map(e => e.id === id ? { ...e, ...updatedEntry, tolovHolati: 'kutilmoqda' } : e));
-                
+
                 toast.success('Tasdiqlash so\'rovi yuborildi', {
                     description: 'Market tasdigini kutmoqda...'
                 });

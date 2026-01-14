@@ -6,7 +6,8 @@ import {
     TouchableOpacity,
     ScrollView,
     ActivityIndicator,
-    RefreshControl
+    RefreshControl,
+    Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
@@ -54,7 +55,10 @@ export const ReportsScreen = () => {
                 .eq('id', user.id)
                 .single();
 
-            let query = supabase.from('entries').select('*').order('created_at', { ascending: false });
+            let query = supabase
+                .from('entries')
+                .select('*')
+                .order('created_at', { ascending: false });
 
             if (profile?.role === 'market') {
                 // If market, filter by market name (client field in entries)
@@ -64,10 +68,34 @@ export const ReportsScreen = () => {
                 query = query.eq('user_id', user.id);
             }
 
-            const { data, error } = await query;
+            const { data: entriesData, error: entriesError } = await query;
 
-            if (error) throw error;
-            setEntries(data || []);
+            if (entriesError) throw entriesError;
+
+            if (entriesData && entriesData.length > 0) {
+                const userIds = [...new Set(entriesData.map(e => e.user_id))].filter(Boolean);
+                if (userIds.length > 0) {
+                    const { data: profilesData } = await supabase
+                        .from('profiles')
+                        .select('id, full_name, avatar_url')
+                        .in('id', userIds);
+
+                    const profilesMap = (profilesData || []).reduce((acc: any, p: any) => ({
+                        ...acc,
+                        [p.id]: p
+                    }), {});
+
+                    const mappedData = entriesData.map(e => ({
+                        ...e,
+                        profiles: profilesMap[e.user_id]
+                    }));
+                    setEntries(mappedData);
+                } else {
+                    setEntries(entriesData);
+                }
+            } else {
+                setEntries([]);
+            }
         } catch (err) {
             console.error('Error fetching reports:', err);
         } finally {
@@ -158,8 +186,16 @@ export const ReportsScreen = () => {
                                     </View>
                                     <View style={styles.entryMain}>
                                         <Text style={styles.entryProduct}>{entry.mahsulot}</Text>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                            <Text style={styles.entryMarket}>{entry.client}</Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                            {entry.profiles?.avatar_url && (
+                                                <Image source={{ uri: entry.profiles.avatar_url }} style={styles.sellerAvatar} />
+                                            )}
+                                            <View>
+                                                <Text style={styles.entryMarket}>{entry.client}</Text>
+                                                {entry.profiles?.full_name && (
+                                                    <Text style={styles.sellerName}>{entry.profiles.full_name}</Text>
+                                                )}
+                                            </View>
                                             <View style={[
                                                 styles.statusBadge,
                                                 { backgroundColor: entry.holat === "to'langan" ? '#f0fdf4' : '#fef2f2' }
@@ -344,6 +380,18 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#94a3b8',
         fontWeight: '500',
+    },
+    sellerAvatar: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+    },
+    sellerName: {
+        fontSize: 10,
+        color: '#64748b',
+        fontWeight: '700',
     },
     statusBadge: {
         paddingHorizontal: 8,

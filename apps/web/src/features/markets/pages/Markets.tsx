@@ -130,9 +130,17 @@ export const Markets: React.FC = () => {
 
                                         <div className="relative z-10">
                                             <div className="flex justify-between items-start mb-3">
-                                                <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl font-bold">
-                                                    {market.name.charAt(0).toUpperCase()}
-                                                </div>
+                                                {market.avatar_url ? (
+                                                    <img
+                                                        src={market.avatar_url}
+                                                        alt={market.name}
+                                                        className="w-12 h-12 rounded-2xl object-cover border border-slate-200 dark:border-slate-700"
+                                                    />
+                                                ) : (
+                                                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl font-bold">
+                                                        {market.name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
                                                 <button
                                                     onClick={() => deleteMarket(market.id)}
                                                     className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors"
@@ -150,12 +158,12 @@ export const Markets: React.FC = () => {
                                 ))}
                             </AnimatePresence>
                             {filteredMarkets.length === 0 && (
-                                <motion.div 
+                                <motion.div
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     className="col-span-full py-16 text-center"
                                 >
-                                    <motion.div 
+                                    <motion.div
                                         initial={{ scale: 0, rotate: -180 }}
                                         animate={{ scale: 1, rotate: 0 }}
                                         transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
@@ -167,7 +175,7 @@ export const Markets: React.FC = () => {
                                         {searchTerm ? 'Marketlar topilmadi' : 'Hozircha marketlar yo\'q'}
                                     </h3>
                                     <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                                        {searchTerm 
+                                        {searchTerm
                                             ? 'Qidiruv bo\'yicha hech narsa topilmadi. Boshqa kalit so\'z bilan qidiring.'
                                             : 'Yangi market qo\'shish uchun formadan foydalaning'}
                                     </p>

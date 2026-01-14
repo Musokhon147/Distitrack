@@ -218,7 +218,13 @@ export default function DashboardScreen() {
                                         {renderInput("Miqdori", <PlusCircle size={14} color="#64748b" />, form.miqdori, (t) => setForm({ ...form, miqdori: t }), "50 kg", "quantity")}
                                     </View>
                                     <View style={{ flex: 1.2, marginLeft: 8 }}>
-                                        {renderInput("Umumiy Narxi", <CreditCard size={14} color="#64748b" />, form.narx, (t) => setForm({ ...form, narx: t }), "Umumiy summa", "price", "numeric")}
+                                        {renderInput("Umumiy Narxi", <CreditCard size={14} color="#64748b" />, form.narx, (t) => {
+                                            // Remove non-numeric characters
+                                            const numeric = t.replace(/\D/g, '');
+                                            // Format with commas
+                                            const formatted = numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                                            setForm({ ...form, narx: formatted });
+                                        }, "Umumiy summa", "price", "numeric")}
                                     </View>
                                 </View>
 

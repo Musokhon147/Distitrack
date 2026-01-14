@@ -221,26 +221,6 @@ export const ProfileScreen = (props: any) => {
                             </View>
                         </View>
 
-                        {/* Management Card */}
-                        <View style={styles.card}>
-                            <View style={styles.cardHeader}>
-                                <Package size={20} color="#4f46e5" />
-                                <Text style={styles.cardTitle}>Boshqaruv</Text>
-                            </View>
-
-                            <TouchableOpacity
-                                style={styles.menuItem}
-                                onPress={() => (props as any).navigation.navigate('Products')}
-                            >
-                                <View style={styles.menuItemLeft}>
-                                    <View style={[styles.menuIconBox, { backgroundColor: '#eef2ff' }]}>
-                                        <Package size={18} color="#4f46e5" />
-                                    </View>
-                                    <Text style={styles.menuItemText}>Mahsulotlar katalogi</Text>
-                                </View>
-                                <ChevronRight size={18} color="#cbd5e1" />
-                            </TouchableOpacity>
-                        </View>
 
                         <TouchableOpacity
                             style={[styles.saveBtn, loading && styles.saveBtnDisabled]}

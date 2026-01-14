@@ -496,6 +496,21 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#0f172a',
     },
+    inputWrapper: {
+        backgroundColor: '#f1f5f9',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        height: 56,
+    },
+    passwordInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#0f172a',
+        height: '100%',
+    },
+    eyeIcon: {
+        padding: 4,
+    },
     otpInput: {
         textAlign: 'center',
         letterSpacing: 2,

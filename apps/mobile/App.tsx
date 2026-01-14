@@ -21,8 +21,11 @@ import {
   LayoutDashboard,
   History,
   Store,
-  User as UserIcon
+  User as UserIcon,
+  Package,
+  FileText
 } from 'lucide-react-native';
+import { ReportsScreen } from './src/screens/ReportsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -52,6 +55,8 @@ function TabNavigator() {
           if (route.name === 'Asosiy') return <LayoutDashboard size={size} color={color} />;
           if (route.name === 'Tarix') return <History size={size} color={color} />;
           if (route.name === 'Do\'konlar') return <Store size={size} color={color} />;
+          if (route.name === 'Katalog') return <Package size={size} color={color} />;
+          if (route.name === 'Hisobot') return <FileText size={size} color={color} />;
           if (route.name === 'Profil') return <UserIcon size={size} color={color} />;
           return null;
         },
@@ -60,6 +65,8 @@ function TabNavigator() {
       <Tab.Screen name="Asosiy" component={DashboardScreen} />
       <Tab.Screen name="Tarix" component={RecordsScreen} />
       <Tab.Screen name="Do'konlar" component={MarketsScreen} />
+      <Tab.Screen name="Katalog" component={ProductsScreen} />
+      <Tab.Screen name="Hisobot" component={ReportsScreen} />
       <Tab.Screen name="Profil" component={ProfileScreen} />
     </Tab.Navigator>
   );

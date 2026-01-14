@@ -8,7 +8,8 @@ import {
     useColorScheme,
     ActivityIndicator,
     Alert,
-    RefreshControl
+    RefreshControl,
+    Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
@@ -72,6 +73,7 @@ export default function MarketDashboardScreen() {
     const [marketId, setMarketId] = useState<string | null>(null);
     const [marketName, setMarketName] = useState<string | null>(null);
     const [recentEntries, setRecentEntries] = useState<any[]>([]);
+    const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
 
     const theme = isDark ? darkStyles : lightStyles;
 
@@ -132,15 +134,30 @@ export default function MarketDashboardScreen() {
 
     const fetchRecentEntries = async (mName: string) => {
         try {
-            const { data, error } = await supabase
+            const { data: entriesData, error: entriesError } = await supabase
                 .from('entries')
                 .select('*')
                 .eq('client', mName)
                 .order('created_at', { ascending: false })
                 .limit(20);
 
-            if (!error && data) {
-                setRecentEntries(data);
+            if (entriesError) throw entriesError;
+
+            if (entriesData) {
+                // Get seller names for these entries
+                const sellerIds = [...new Set(entriesData.map(e => e.user_id))];
+                const { data: profilesData } = await supabase
+                    .from('profiles')
+                    .select('id, full_name')
+                    .in('id', sellerIds);
+
+                const sellerMap = new Map((profilesData || []).map(p => [p.id, p.full_name]));
+                const mapped = entriesData.map(e => ({
+                    ...e,
+                    seller_name: sellerMap.get(e.user_id) || 'Noma\'lum'
+                }));
+
+                setRecentEntries(mapped);
             }
         } catch (err) {
             console.error('Error fetching recent entries:', err);
@@ -235,7 +252,7 @@ export default function MarketDashboardScreen() {
             // Update the confirmation status
             const { error: confirmError } = await supabase
                 .from('payment_confirmations')
-                .update({ status: 'approved', responded_at: new Date().toISOString() })
+                .update({ status: 'approved' })
                 .eq('id', confirmation.id);
 
             if (confirmError) {
@@ -257,7 +274,7 @@ export default function MarketDashboardScreen() {
         try {
             const { error } = await supabase
                 .from('payment_confirmations')
-                .update({ status: 'rejected', responded_at: new Date().toISOString() })
+                .update({ status: 'rejected' })
                 .eq('id', confirmation.id);
 
             if (error) throw error;
@@ -271,6 +288,102 @@ export default function MarketDashboardScreen() {
             setProcessingId(null);
         }
     };
+
+    const DetailsModal = () => (
+        <Modal
+            visible={!!selectedEntry}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setSelectedEntry(null)}
+        >
+            <View style={styles.modalOverlay}>
+                <View style={[styles.modalContent, { backgroundColor: theme.cardBackground }]}>
+                    <View style={styles.modalHeader}>
+                        <View style={styles.modalHeaderBar} />
+                        <Text style={[styles.modalTitle, { color: theme.textColor }]}>Xarid Tafsilotlari</Text>
+                        <TouchableOpacity
+                            onPress={() => setSelectedEntry(null)}
+                            style={styles.modalCloseBtn}
+                        >
+                            <XCircle size={24} color="#94a3b8" />
+                        </TouchableOpacity>
+                    </View>
+
+                    {selectedEntry && (
+                        <View style={styles.modalBody}>
+                            <View style={styles.modalSection}>
+                                <Text style={styles.labelSmall}>Mahsulot</Text>
+                                <View style={styles.detailRow}>
+                                    <View style={[styles.itemIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                                        <PackageIcon size={20} color="#10b981" />
+                                    </View>
+                                    <Text style={[styles.detailValue, { color: theme.textColor }]}>{selectedEntry.mahsulot}</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.modalSection}>
+                                <Text style={styles.labelSmall}>Sotuvchi</Text>
+                                <View style={styles.detailRow}>
+                                    <View style={[styles.itemIconBox, { backgroundColor: 'rgba(79, 70, 229, 0.1)' }]}>
+                                        <UserIcon size={20} color="#4f46e5" />
+                                    </View>
+                                    <Text style={[styles.detailValue, { color: theme.textColor }]}>{selectedEntry.seller_name}</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.gridRow}>
+                                <View style={styles.gridCol}>
+                                    <Text style={styles.labelSmall}>Miqdori</Text>
+                                    <Text style={[styles.gridValue, { color: theme.textColor }]}>{selectedEntry.miqdor}</Text>
+                                </View>
+                                <View style={styles.gridCol}>
+                                    <Text style={styles.labelSmall}>Sana</Text>
+                                    <Text style={[styles.gridValue, { color: theme.textColor }]}>{selectedEntry.sana || 'Bugun'}</Text>
+                                </View>
+                            </View>
+
+                            <View style={[styles.modalSection, { marginTop: 12 }]}>
+                                <Text style={styles.labelSmall}>Umumiy Summa</Text>
+                                <View style={styles.amountBanner}>
+                                    <DollarSign size={24} color="#10b981" />
+                                    <Text style={styles.bannerText}>
+                                        {new Intl.NumberFormat('uz-UZ').format(parseFloat(selectedEntry.summa || '0'))} so'm
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.modalSection}>
+                                <Text style={styles.labelSmall}>To'lov Holati</Text>
+                                <View style={[
+                                    styles.statusBanner,
+                                    { backgroundColor: selectedEntry.holat === "to'langan" ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }
+                                ]}>
+                                    {selectedEntry.holat === "to'langan" ? (
+                                        <CheckCircle2 size={18} color="#10b981" />
+                                    ) : (
+                                        <Clock size={18} color="#ef4444" />
+                                    )}
+                                    <Text style={[
+                                        styles.statusBannerText,
+                                        { color: selectedEntry.holat === "to'langan" ? '#10b981' : '#ef4444' }
+                                    ]}>
+                                        {selectedEntry.holat === "to'langan" ? "To'langan" : "Qarz (To'lanmagan)"}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <TouchableOpacity
+                                style={styles.modalConfirmBtn}
+                                onPress={() => setSelectedEntry(null)}
+                            >
+                                <Text style={styles.modalConfirmText}>Yopish</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </View>
+            </View>
+        </Modal>
+    );
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.backgroundColor }]}>
@@ -411,9 +524,10 @@ export default function MarketDashboardScreen() {
                         </View>
                     ) : (
                         recentEntries.map(entry => (
-                            <View
+                            <TouchableOpacity
                                 key={entry.id}
                                 style={[styles.confirmationItem, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderColor: theme.borderColor }]}
+                                onPress={() => setSelectedEntry(entry)}
                             >
                                 <View style={styles.itemRow}>
                                     <View style={[styles.itemIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
@@ -450,11 +564,12 @@ export default function MarketDashboardScreen() {
                                         </Text>
                                     </View>
                                 </View>
-                            </View>
+                            </TouchableOpacity>
                         ))
                     )}
                 </View>
             </ScrollView>
+            <DetailsModal />
         </SafeAreaView>
     );
 }
@@ -681,5 +796,109 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '800',
         color: '#10b981',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
+        padding: 24,
+        paddingBottom: 40,
+        height: '75%',
+    },
+    modalHeader: {
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    modalHeaderBar: {
+        width: 40,
+        height: 4,
+        backgroundColor: '#e2e8f0',
+        borderRadius: 2,
+        marginBottom: 16,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '900',
+    },
+    modalCloseBtn: {
+        position: 'absolute',
+        right: 0,
+        top: 20,
+    },
+    modalBody: {
+        flex: 1,
+    },
+    modalSection: {
+        marginBottom: 20,
+    },
+    detailRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    detailValue: {
+        fontSize: 18,
+        fontWeight: '700',
+        marginLeft: 12,
+    },
+    gridRow: {
+        flexDirection: 'row',
+        gap: 16,
+        marginBottom: 20,
+    },
+    gridCol: {
+        flex: 1,
+        backgroundColor: 'rgba(226, 232, 240, 0.2)',
+        padding: 16,
+        borderRadius: 20,
+    },
+    gridValue: {
+        fontSize: 16,
+        fontWeight: '800',
+        marginTop: 4,
+    },
+    amountBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        padding: 20,
+        borderRadius: 24,
+        marginTop: 8,
+        gap: 12,
+    },
+    bannerText: {
+        fontSize: 24,
+        fontWeight: '900',
+        color: '#10b981',
+    },
+    statusBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 20,
+        marginTop: 8,
+        gap: 10,
+    },
+    statusBannerText: {
+        fontSize: 15,
+        fontWeight: '800',
+    },
+    modalConfirmBtn: {
+        backgroundColor: '#4f46e5',
+        paddingVertical: 18,
+        borderRadius: 20,
+        alignItems: 'center',
+        marginTop: 'auto',
+    },
+    modalConfirmText: {
+        color: '#ffffff',
+        fontSize: 16,
+        fontWeight: '900',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
     },
 });

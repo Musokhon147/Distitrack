@@ -61,10 +61,7 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         setLoading(true);
         try {
-            // Calculate summa
-            const price = parseFloat(entry.narx.replace(/,/g, '')) || 0;
-            const qty = parseFloat(entry.miqdori.replace(/\D/g, '')) || 0;
-            const summa = (price * qty).toString();
+            const summa = entry.narx.replace(/[^\d.]/g, '') || '0';
 
             const dbEntry = {
                 user_id: user.id,
@@ -113,6 +110,10 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (updatedEntry.narx !== undefined) dbUpdate.narx = updatedEntry.narx;
         if (updatedEntry.tolovHolati !== undefined) dbUpdate.holat = updatedEntry.tolovHolati;
         if (updatedEntry.marketRaqami !== undefined) dbUpdate.izoh = updatedEntry.marketRaqami;
+        if (updatedEntry.narx !== undefined) {
+            dbUpdate.narx = updatedEntry.narx;
+            dbUpdate.summa = updatedEntry.narx.replace(/[^\d.]/g, '') || '0';
+        }
 
         const { error } = await supabase
             .from('entries')

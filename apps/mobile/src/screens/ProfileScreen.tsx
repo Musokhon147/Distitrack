@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -10,7 +10,8 @@ import {
     ScrollView,
     Dimensions,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
@@ -42,6 +43,66 @@ export const ProfileScreen = (props: any) => {
     const { user, signOut } = useAuth();
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+
+    useEffect(() => {
+        if (user) fetchAvatar();
+    }, [user]);
+
+    const fetchAvatar = async () => {
+        try {
+            const { data } = await supabase
+                .from('profiles')
+                .select('avatar_url')
+                .eq('id', user?.id)
+                .single();
+            if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+        } catch (err) {
+            console.log('No avatar found');
+        }
+    };
+
+    const pickImage = async () => {
+        const { launchImageLibraryAsync, requestMediaLibraryPermissionsAsync, MediaTypeOptions } = await import('expo-image-picker');
+        const { status } = await requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Ruxsat kerak', 'Rasm tanlash uchun ruxsat bering');
+            return;
+        }
+        const result = await launchImageLibraryAsync({
+            mediaTypes: MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.7,
+        });
+        if (!result.canceled && result.assets[0]) {
+            uploadAvatar(result.assets[0].uri);
+        }
+    };
+
+    const uploadAvatar = async (uri: string) => {
+        setUploading(true);
+        try {
+            const ext = uri.split('.').pop() || 'jpg';
+            const fileName = `${user?.id}.${ext}`;
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            const arrayBuffer = await new Response(blob).arrayBuffer();
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(fileName, arrayBuffer, { contentType: `image/${ext}`, upsert: true });
+            if (uploadError) throw uploadError;
+            const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
+            await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user?.id);
+            setAvatarUrl(publicUrl + '?t=' + Date.now());
+            Alert.alert('Muvaffaqiyat', 'Rasm yuklandi!');
+        } catch (err: any) {
+            Alert.alert('Xatolik', err.message || 'Rasm yuklashda xatolik');
+        } finally {
+            setUploading(false);
+        }
+    };
 
     const { control, handleSubmit, formState: { errors } } = useForm<ProfileInput>({
         resolver: zodResolver(profileSchema),
@@ -106,16 +167,20 @@ export const ProfileScreen = (props: any) => {
                     <SafeAreaView edges={['top']}>
                         <View style={styles.headerContent}>
                             <View style={styles.avatarContainer}>
-                                <LinearGradient
-                                    colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.05)']}
-                                    style={styles.avatarBackground}
-                                >
-                                    <Text style={styles.avatarText}>
-                                        {getInitials(user?.user_metadata?.full_name || user?.email || 'U')}
-                                    </Text>
-                                </LinearGradient>
-                                <TouchableOpacity style={styles.cameraBtn}>
-                                    <Camera size={14} color="#4f46e5" />
+                                {avatarUrl ? (
+                                    <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+                                ) : (
+                                    <LinearGradient
+                                        colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.05)']}
+                                        style={styles.avatarBackground}
+                                    >
+                                        <Text style={styles.avatarText}>
+                                            {getInitials(user?.user_metadata?.full_name || user?.email || 'U')}
+                                        </Text>
+                                    </LinearGradient>
+                                )}
+                                <TouchableOpacity style={styles.cameraBtn} onPress={pickImage} disabled={uploading}>
+                                    {uploading ? <ActivityIndicator size="small" color="#4f46e5" /> : <Camera size={14} color="#4f46e5" />}
                                 </TouchableOpacity>
                             </View>
                             <Text style={styles.userName}>{user?.user_metadata?.full_name || 'Foydalanuvchi'}</Text>
@@ -290,6 +355,13 @@ const styles = StyleSheet.create({
         fontSize: 36,
         fontWeight: '900',
         color: '#fff',
+    },
+    avatarImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.3)',
     },
     cameraBtn: {
         position: 'absolute',

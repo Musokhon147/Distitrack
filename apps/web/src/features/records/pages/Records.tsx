@@ -52,6 +52,26 @@ const SwipeableRecord: React.FC<SwipeableRecordProps> = ({ children, entry, onEd
         const offset = info.offset.x;
         const velocity = info.velocity.x;
 
+        if (entry.tolovHolati === "kutilmoqda") {
+            if (offset < -100 || velocity < -500) {
+                // Allow Swiped Left -> Delete Intent even for pending
+                await controls.start({ x: -80 });
+            } else {
+                await controls.start({ x: 0 });
+            }
+            return;
+        }
+
+        if (entry.tolovHolati === "to\'langan") {
+            if (offset < -100 || velocity < -500) {
+                // Allow Swiped Left -> Delete Intent
+                await controls.start({ x: -80 });
+            } else {
+                await controls.start({ x: 0 });
+            }
+            return;
+        }
+
         if (offset < -100 || velocity < -500) {
             // Swiped Left -> Delete Intent
             await controls.start({ x: -80 }); // sticky open
@@ -68,10 +88,12 @@ const SwipeableRecord: React.FC<SwipeableRecordProps> = ({ children, entry, onEd
         <div className="relative group touch-pan-y">
             {/* Background Actions (Revealed on Swipe) */}
             <div className="absolute inset-0 flex rounded-2xl overflow-hidden pointer-events-none">
-                <div className="w-1/2 bg-primary-500/10 flex items-center justify-start pl-6">
-                    <Edit3 className="text-primary-600" />
-                </div>
-                <div className="w-1/2 bg-red-500/10 flex items-center justify-end pr-6">
+                {entry.tolovHolati === "to'lanmagan" && (
+                    <div className="w-1/2 bg-primary-500/10 flex items-center justify-start pl-6">
+                        <Edit3 className="text-primary-600" />
+                    </div>
+                )}
+                <div className={`${entry.tolovHolati === "to'lanmagan" ? 'w-1/2' : 'w-full'} bg-red-500/10 flex items-center justify-end pr-6`}>
                     <Trash2 className="text-red-500" />
                 </div>
             </div>
@@ -79,7 +101,7 @@ const SwipeableRecord: React.FC<SwipeableRecordProps> = ({ children, entry, onEd
             {/* Foreground Content */}
             <motion.div
                 drag="x"
-                dragConstraints={{ left: -100, right: 0 }}
+                dragConstraints={entry.tolovHolati === "to'lanmagan" ? { left: -100, right: 0 } : { left: -80, right: 0 }}
                 animate={controls}
                 onDragEnd={handleDragEnd}
                 className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-2xl shadow-sm hover:shadow-md transition-all relative z-10"
@@ -476,12 +498,14 @@ export const Records: React.FC = () => {
                                                 </div>
 
                                                 <div className="hidden lg:flex gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={() => handleEditStart(entry)}
-                                                        className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
-                                                    >
-                                                        <Edit3 size={18} />
-                                                    </button>
+                                                    {entry.tolovHolati === "to'lanmagan" && (
+                                                        <button
+                                                            onClick={() => handleEditStart(entry)}
+                                                            className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                                                        >
+                                                            <Edit3 size={18} />
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => deleteEntry(entry.id)}
                                                         className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -8,11 +8,12 @@ import {
     TextInput,
     Platform,
     StatusBar,
-    Dimensions,
-    Alert,
-    Modal,
     ActivityIndicator,
-    Image
+    Image,
+    useWindowDimensions,
+    KeyboardAvoidingView,
+    Alert,
+    Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -21,29 +22,15 @@ import {
     Store as StoreIcon,
     ChevronRight as ChevronRightIcon,
     Phone as PhoneIcon,
-    MapPin as MapPinIcon,
-    TrendingUp as TrendingUpIcon,
-    DollarSign as DollarSignIcon,
-    Clock as ClockIcon,
-    Briefcase as BriefcaseIcon,
     X as XIcon,
-    MoreVertical,
-    Check as CheckIcon
 } from 'lucide-react-native';
-// Reanimated disabled for stability
-/*
-import Animated, {
-    FadeInDown,
-    FadeInRight,
-    Layout,
-} from 'react-native-reanimated';
-*/
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEntryContext } from '../context/EntryContext';
 import { useMarkets } from '../context/MarketContext';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { s, vs, normalize } from '../utils/scaling';
 
 const marketSchema = z.object({
     name: z.string().min(2, 'Kamida 2 ta belgi'),
@@ -58,39 +45,21 @@ const Plus = PlusIcon as any;
 const Store = StoreIcon as any;
 const ChevronRight = ChevronRightIcon as any;
 const Phone = PhoneIcon as any;
-const MapPin = MapPinIcon as any;
-const TrendingUp = TrendingUpIcon as any;
-const DollarSign = DollarSignIcon as any;
-const Clock = ClockIcon as any;
-const Briefcase = BriefcaseIcon as any;
 const X = XIcon as any;
-const Check = CheckIcon as any;
-
-const { width } = Dimensions.get('window');
-
 
 interface MarketItemProps {
     item: {
         id: string;
         name: string;
         phone: string;
-        debt: number;
         avatar_url?: string;
     };
     index: number;
 }
 
 const AnimatedMarketItem = ({ item, index, onDelete }: MarketItemProps & { onDelete: (id: string, name: string) => void }) => {
-    // Check if this market has any active debt in entries
-    const hasDebt = useMemo(() => {
-        // This is a simplification. In a real app we might want to pre-calculate this or fetch from DB
-        return false;
-    }, [item.name]);
-
     return (
-        <View
-            style={{ width: '100%' }}
-        >
+        <View style={{ width: '100%' }}>
             <TouchableOpacity style={styles.marketCard} activeOpacity={0.7}>
                 <View style={styles.marketIconContainer}>
                     {item.avatar_url ? (
@@ -120,7 +89,7 @@ const AnimatedMarketItem = ({ item, index, onDelete }: MarketItemProps & { onDel
                     >
                         <X size={16} color="#94a3b8" />
                     </TouchableOpacity>
-                    <ChevronRight size={18} color="#cbd5e1" style={{ marginLeft: 8 }} />
+                    <ChevronRight size={18} color="#cbd5e1" style={{ marginLeft: s(8) }} />
                 </View>
             </TouchableOpacity>
         </View>
@@ -128,6 +97,7 @@ const AnimatedMarketItem = ({ item, index, onDelete }: MarketItemProps & { onDel
 };
 
 export const MarketsScreen = () => {
+    const { width } = useWindowDimensions();
     const { entries } = useEntryContext();
     const { markets, loading, addMarket, deleteMarket } = useMarkets();
     const [searchTerm, setSearchTerm] = useState('');
@@ -172,6 +142,28 @@ export const MarketsScreen = () => {
         m.phone.includes(searchTerm)
     );
 
+    const SummaryHeader = () => (
+        <View style={styles.summaryContainerSync}>
+            <View style={styles.searchSectionSync}>
+                <View style={styles.searchBar}>
+                    <Search size={20} color="#94a3b8" />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Do'konlarni qidirish..."
+                        placeholderTextColor="#94a3b8"
+                        value={searchTerm}
+                        onChangeText={setSearchTerm}
+                    />
+                    {searchTerm !== '' && (
+                        <TouchableOpacity onPress={() => setSearchTerm('')}>
+                            <X size={18} color="#94a3b8" />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </View>
+        </View>
+    );
+
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
@@ -194,26 +186,9 @@ export const MarketsScreen = () => {
                 </TouchableOpacity>
             </View>
 
-            <View style={styles.searchSection}>
-                <View style={styles.searchBar}>
-                    <Search size={20} color="#94a3b8" />
-                    <TextInput
-                        placeholder="Do'kon qidirish..."
-                        style={styles.searchInput}
-                        value={searchTerm}
-                        onChangeText={setSearchTerm}
-                        placeholderTextColor="#94a3b8"
-                    />
-                    {searchTerm !== '' && (
-                        <TouchableOpacity onPress={() => setSearchTerm('')}>
-                            <X size={18} color="#94a3b8" />
-                        </TouchableOpacity>
-                    )}
-                </View>
-            </View>
-
             <FlatList
                 data={filteredMarkets}
+                keyExtractor={(item) => item.id}
                 renderItem={({ item, index }) => (
                     <AnimatedMarketItem
                         item={item as any}
@@ -221,17 +196,15 @@ export const MarketsScreen = () => {
                         onDelete={handleDelete}
                     />
                 )}
-                keyExtractor={item => item.id}
+                ListHeaderComponent={SummaryHeader}
                 contentContainerStyle={styles.listContainer}
                 showsVerticalScrollIndicator={false}
                 refreshing={loading}
                 onRefresh={useMarkets().refreshMarkets}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Store size={48} color="#e2e8f0" />
-                        <Text style={styles.emptyText}>
-                            {searchTerm ? 'Mijozlar topilmadi' : 'Hozircha mijozlar yo\'q'}
-                        </Text>
+                        <Store size={48} color="#94a3b8" />
+                        <Text style={styles.emptyText}>Do'konlar topilmadi</Text>
                     </View>
                 }
             />
@@ -239,13 +212,14 @@ export const MarketsScreen = () => {
             <Modal
                 transparent
                 visible={isAddModalVisible}
-                animationType="fade"
+                animationType="slide"
                 onRequestClose={() => setIsAddModalVisible(false)}
             >
-                <View style={styles.modalOverlay}>
-                    <View
-                        style={styles.modalContent}
-                    >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={styles.modalOverlay}
+                >
+                    <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Yangi market qo'shish</Text>
                             <TouchableOpacity onPress={() => setIsAddModalVisible(false)}>
@@ -327,7 +301,7 @@ export const MarketsScreen = () => {
                             </LinearGradient>
                         </TouchableOpacity>
                     </View>
-                </View>
+                </KeyboardAvoidingView>
             </Modal>
         </SafeAreaView>
     );
@@ -342,23 +316,23 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingTop: 10,
-        marginBottom: 24,
+        paddingHorizontal: s(24),
+        paddingTop: vs(10),
+        marginBottom: vs(24),
     },
     title: {
-        fontSize: 32,
+        fontSize: normalize(32),
         fontWeight: '900',
         color: '#1e293b',
         letterSpacing: -1,
     },
     subtitle: {
-        fontSize: 14,
+        fontSize: normalize(14),
         color: '#64748b',
         fontWeight: '500',
     },
     addButton: {
-        borderRadius: 16,
+        borderRadius: s(16),
         elevation: 8,
         shadowColor: '#4f46e5',
         shadowOffset: { width: 0, height: 4 },
@@ -366,44 +340,46 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
     },
     addGradient: {
-        width: 52,
-        height: 52,
-        borderRadius: 16,
+        width: s(52),
+        height: s(52),
+        borderRadius: s(16),
         justifyContent: 'center',
         alignItems: 'center',
     },
-    searchSection: {
-        paddingHorizontal: 24,
-        marginBottom: 24,
+    summaryContainerSync: {
+        paddingHorizontal: s(24),
+        marginBottom: vs(16),
+    },
+    searchSectionSync: {
+        marginTop: vs(4),
     },
     searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#fff',
-        borderRadius: 18,
-        paddingHorizontal: 16,
-        height: 54,
+        borderRadius: s(18),
+        paddingHorizontal: s(16),
+        height: vs(54),
         borderWidth: 1,
         borderColor: '#f1f5f9',
     },
     searchInput: {
         flex: 1,
-        marginLeft: 12,
-        fontSize: 16,
+        marginLeft: s(12),
+        fontSize: normalize(16),
         fontWeight: '500',
         color: '#1e293b',
     },
     listContainer: {
-        paddingHorizontal: 24,
-        paddingBottom: 40,
+        paddingBottom: vs(40),
     },
     marketCard: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#fff',
-        borderRadius: 22,
-        padding: 14,
-        marginBottom: 14,
+        borderRadius: s(22),
+        padding: s(14),
+        marginBottom: vs(14),
         borderWidth: 1,
         borderColor: '#f1f5f9',
         shadowColor: '#000',
@@ -413,21 +389,21 @@ const styles = StyleSheet.create({
         elevation: 1,
     },
     marketIconContainer: {
-        marginRight: 14,
+        marginRight: s(14),
     },
     marketIconInner: {
-        width: 52,
-        height: 52,
-        borderRadius: 16,
+        width: s(52),
+        height: s(52),
+        borderRadius: s(16),
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#f1f5f9',
     },
     marketAvatar: {
-        width: 52,
-        height: 52,
-        borderRadius: 16,
+        width: s(52),
+        height: s(52),
+        borderRadius: s(16),
         borderWidth: 1,
         borderColor: '#f1f5f9',
     },
@@ -435,20 +411,20 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     marketName: {
-        fontSize: 16,
+        fontSize: normalize(16),
         fontWeight: '800',
         color: '#1e293b',
-        marginBottom: 2,
+        marginBottom: vs(2),
     },
     marketSubInfo: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     subIcon: {
-        marginRight: 4,
+        marginRight: s(4),
     },
     marketPhone: {
-        fontSize: 13,
+        fontSize: normalize(13),
         color: '#94a3b8',
         fontWeight: '600',
     },
@@ -456,31 +432,19 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    debtBadge: {
-        backgroundColor: '#fef2f2',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-    },
-    debtText: {
-        color: '#ef4444',
-        fontSize: 10,
-        fontWeight: '800',
-        textTransform: 'uppercase',
+    deleteBtn: {
+        padding: s(4),
     },
     emptyContainer: {
         alignItems: 'center',
-        marginTop: 50,
+        marginTop: vs(50),
         opacity: 0.3,
     },
     emptyText: {
-        marginTop: 10,
-        fontSize: 16,
+        marginTop: vs(10),
+        fontSize: normalize(16),
         color: '#64748b',
         fontWeight: '600',
-    },
-    deleteBtn: {
-        padding: 4,
     },
     modalOverlay: {
         flex: 1,
@@ -489,37 +453,37 @@ const styles = StyleSheet.create({
     },
     modalContent: {
         backgroundColor: '#fff',
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        padding: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+        borderTopLeftRadius: s(32),
+        borderTopRightRadius: s(32),
+        padding: s(24),
+        paddingBottom: Platform.OS === 'ios' ? vs(40) : vs(24),
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: vs(24),
     },
     modalTitle: {
-        fontSize: 20,
+        fontSize: normalize(20),
         fontWeight: '800',
         color: '#1e293b',
     },
     formGroup: {
-        marginBottom: 16,
+        marginBottom: vs(16),
     },
     label: {
-        fontSize: 14,
+        fontSize: normalize(14),
         fontWeight: '700',
         color: '#64748b',
-        marginBottom: 8,
-        marginLeft: 4,
+        marginBottom: vs(8),
+        marginLeft: s(4),
     },
     input: {
         backgroundColor: '#f8fafc',
-        borderRadius: 16,
-        padding: 16,
-        fontSize: 16,
+        borderRadius: s(16),
+        padding: s(16),
+        fontSize: normalize(16),
         fontWeight: '500',
         color: '#1e293b',
         borderWidth: 1,
@@ -530,26 +494,26 @@ const styles = StyleSheet.create({
     },
     errorText: {
         color: '#f43f5e',
-        fontSize: 12,
+        fontSize: normalize(12),
         fontWeight: '600',
-        marginTop: 4,
-        marginLeft: 4,
+        marginTop: vs(4),
+        marginLeft: s(4),
     },
     submitBtn: {
-        marginTop: 8,
-        borderRadius: 16,
+        marginTop: vs(8),
+        borderRadius: s(16),
         overflow: 'hidden',
     },
     submitGradient: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 18,
-        gap: 8,
+        padding: vs(18),
+        gap: s(8),
     },
     submitText: {
         color: '#fff',
-        fontSize: 18,
+        fontSize: normalize(18),
         fontWeight: '700',
     },
 });

@@ -65,6 +65,8 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 narx: row.narx,
                 tolovHolati: row.holat as any,
                 sana: row.sana,
+                summa: row.summa || 0,
+                created_at: row.created_at,
                 sellerName: profilesMap[row.user_id]?.full_name,
                 sellerAvatar: profilesMap[row.user_id]?.avatar_url,
             }));
@@ -114,6 +116,7 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                     mahsulotTuri: data.mahsulot,
                     miqdori: data.miqdor,
                     narx: data.narx,
+                    summa: Number(data.summa) || 0,
                     tolovHolati: data.holat as any,
                     sana: data.sana,
                 };
@@ -127,6 +130,23 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const updateEntry = async (id: string, updatedEntry: Partial<Entry>) => {
         if (!user) return;
+
+        const currentEntry = entries.find(e => e.id === id);
+        if (!currentEntry) {
+            toast.error('Yozuv topilmadi');
+            return;
+        }
+
+        // Prevent modification if already paid or pending
+        if (currentEntry.tolovHolati === "to'langan") {
+            toast.error("To'langan yozuvni o'zgartirib bo'lmaydi");
+            return;
+        }
+
+        if (currentEntry.tolovHolati === "kutilmoqda") {
+            toast.error("Tasdiqlash kutilayotgan yozuvni o'zgartirib bo'lmaydi");
+            return;
+        }
 
         // Check if payment status is being changed to 'to'langan'
         const isChangingToPaid = updatedEntry.tolovHolati === "to'langan";
@@ -270,6 +290,12 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     const deleteEntry = async (id: string) => {
+        const currentEntry = entries.find(e => e.id === id);
+        if (currentEntry?.tolovHolati === "to'langan") {
+            toast.error("To'langan yozuvni o'chirib bo'lmaydi");
+            return;
+        }
+
         const { error } = await supabase
             .from('entries')
             .delete()

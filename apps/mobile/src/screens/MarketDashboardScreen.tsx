@@ -80,7 +80,7 @@ export default function MarketDashboardScreen() {
     const stats = useMemo(() => {
         const total = recentEntries.length;
         const paidCount = recentEntries.filter(e => e.holat === "to'langan").length;
-        const totalAmount = recentEntries.reduce((sum, e) => sum + (parseFloat(e.summa) || 0), 0);
+        const totalAmount = recentEntries.reduce((sum, e) => sum + (Number(e.summa) || 0), 0);
 
         return {
             total,
@@ -272,6 +272,17 @@ export default function MarketDashboardScreen() {
     const handleReject = async (confirmation: PaymentConfirmation) => {
         setProcessingId(confirmation.id);
         try {
+            // 1. Update the entry status back to "to'lanmagan"
+            const { error: entryError } = await supabase
+                .from('entries')
+                .update({ holat: "to'lanmagan" })
+                .eq('id', confirmation.entry_id);
+
+            if (entryError) {
+                console.error('Error reverting entry status:', entryError);
+            }
+
+            // 2. Update the confirmation status
             const { error } = await supabase
                 .from('payment_confirmations')
                 .update({ status: 'rejected' })
@@ -347,7 +358,7 @@ export default function MarketDashboardScreen() {
                                 <View style={styles.amountBanner}>
                                     <DollarSign size={24} color="#10b981" />
                                     <Text style={styles.bannerText}>
-                                        {new Intl.NumberFormat('uz-UZ').format(parseFloat(selectedEntry.summa || '0'))} so'm
+                                        {new Intl.NumberFormat('uz-UZ').format(Number(selectedEntry.summa || '0'))} so'm
                                     </Text>
                                 </View>
                             </View>
@@ -456,7 +467,7 @@ export default function MarketDashboardScreen() {
                                     </View>
                                     <View style={styles.itemMain}>
                                         <Text style={styles.labelSmall}>Summa</Text>
-                                        <Text style={[styles.valueSmall, { color: '#10b981' }]}>{new Intl.NumberFormat('uz-UZ').format(parseFloat(confirmation.entry?.summa || '0'))} so'm</Text>
+                                        <Text style={[styles.valueSmall, { color: '#10b981' }]}>{new Intl.NumberFormat('uz-UZ').format(Number(confirmation.entry?.summa || '0'))} so'm</Text>
                                     </View>
                                 </View>
 
@@ -540,7 +551,7 @@ export default function MarketDashboardScreen() {
                                     <View style={{ alignItems: 'flex-end' }}>
                                         <Text style={styles.labelSmall}>Summa</Text>
                                         <Text style={[styles.amount, { color: entry.holat === "to'langan" ? '#10b981' : '#ef4444' }]}>
-                                            {new Intl.NumberFormat('uz-UZ').format(parseFloat(entry.summa || '0'))} so'm
+                                            {new Intl.NumberFormat('uz-UZ').format(Number(entry.summa || '0'))} so'm
                                         </Text>
                                     </View>
                                 </View>

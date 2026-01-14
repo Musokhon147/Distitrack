@@ -212,11 +212,11 @@ export const usePaymentConfirmations = () => {
 
             // Refresh confirmations list (removes the approved one from pending list)
             await fetchConfirmations();
-            
+
             toast.success('To\'lov tasdiqlandi', {
                 description: 'Mahsulot holati "To\'langan" ga yangilandi'
             });
-            
+
             return true;
         } catch (err: any) {
             console.error('Error approving confirmation:', err);
@@ -249,11 +249,11 @@ export const usePaymentConfirmations = () => {
                 throw fetchError;
             }
 
-            // Revert entry status to original status
-            if (confirmation?.entry_id && confirmation?.current_status) {
+            // Revert entry status back to "to'lanmagan" as requested
+            if (confirmation?.entry_id) {
                 const { error: revertError } = await supabase
                     .from('entries')
-                    .update({ holat: confirmation.current_status })
+                    .update({ holat: "to'lanmagan" })
                     .eq('id', confirmation.entry_id);
 
                 if (revertError) {
@@ -277,11 +277,11 @@ export const usePaymentConfirmations = () => {
 
             // Refresh confirmations list
             await fetchConfirmations();
-            
+
             toast.info('So\'rov rad etildi', {
                 description: 'Mahsulot holati oldingi holatiga qaytarildi'
             });
-            
+
             return true;
         } catch (err: any) {
             console.error('Error rejecting confirmation:', err);

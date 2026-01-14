@@ -7,6 +7,8 @@ export interface Entry {
     narx: string; // price
     tolovHolati: 'to\'langan' | 'to\'lanmagan' | 'kutilmoqda';
     sana: string;
+    summa: number; // numeric total
+    created_at?: string;
     marketId?: string;
     sellerName?: string;
     sellerAvatar?: string;

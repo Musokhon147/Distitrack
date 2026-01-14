@@ -8,10 +8,10 @@ import {
     ActivityIndicator,
     Alert,
     ScrollView,
-    Dimensions,
     KeyboardAvoidingView,
     Platform,
-    Image
+    Image,
+    StatusBar
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
@@ -24,31 +24,49 @@ import {
     User,
     Mail,
     Lock,
-    Shield,
     Camera,
     ChevronRight,
     LogOut,
     Eye,
     EyeOff,
-    Package
 } from 'lucide-react-native';
-// Reanimated disabled for stability
-/*
-import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
-*/
+import { s, vs, normalize } from '../utils/scaling';
 
-const { width } = Dimensions.get('window');
-
-export const ProfileScreen = (props: any) => {
+export const ProfileScreen = () => {
     const { user, signOut } = useAuth();
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
 
+    const { control, handleSubmit, reset, formState: { errors } } = useForm<ProfileInput>({
+        resolver: zodResolver(profileSchema),
+    });
+
     useEffect(() => {
-        if (user) fetchAvatar();
+        if (user) {
+            fetchProfile();
+            fetchAvatar();
+        }
     }, [user]);
+
+    const fetchProfile = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user?.id)
+                .single();
+            if (error) throw error;
+            if (data) {
+                reset({
+                    full_name: data.full_name,
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+        }
+    };
 
     const fetchAvatar = async () => {
         try {
@@ -98,229 +116,130 @@ export const ProfileScreen = (props: any) => {
             setAvatarUrl(publicUrl + '?t=' + Date.now());
             Alert.alert('Muvaffaqiyat', 'Rasm yuklandi!');
         } catch (err: any) {
-            Alert.alert('Xatolik', err.message || 'Rasm yuklashda xatolik');
+            Alert.alert('Xatolik', err.message);
         } finally {
             setUploading(false);
         }
     };
 
-    const { control, handleSubmit, formState: { errors } } = useForm<ProfileInput>({
-        resolver: zodResolver(profileSchema),
-        defaultValues: {
-            full_name: user?.user_metadata?.full_name || '',
-            password: '',
-            confirm_password: ''
-        }
-    });
-
     const onSubmit = async (data: ProfileInput) => {
         setLoading(true);
         try {
-            const updates: any = {
-                data: { full_name: data.full_name }
-            };
-
-            if (data.password && data.password.length > 0) {
-                updates.password = data.password;
-            }
-
-            const { error } = await supabase.auth.updateUser(updates);
+            const { error } = await supabase
+                .from('profiles')
+                .update({
+                    full_name: data.full_name,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', user?.id);
 
             if (error) throw error;
-
             Alert.alert('Muvaffaqiyat', 'Profil muvaffaqiyatli yangilandi');
         } catch (error: any) {
-            Alert.alert('Xatolik', error.message || 'Xatolik yuz berdi');
+            Alert.alert('Xatolik', error.message);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSignOut = () => {
-        Alert.alert(
-            "Chiqish",
-            "Tizimdan chiqmoqchimisiz?",
-            [
-                { text: "Bekor qilish", style: "cancel" },
-                { text: "Chiqish", style: "destructive", onPress: signOut }
-            ]
-        );
-    };
-
-    const getInitials = (name: string) => {
-        return name
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .toUpperCase()
-            .substring(0, 2);
-    };
-
     return (
-        <View style={styles.container}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Header Section */}
-                <LinearGradient
-                    colors={['#4f46e5', '#3730a3']}
-                    style={styles.headerGradient}
-                >
-                    <SafeAreaView edges={['top']}>
-                        <View style={styles.headerContent}>
-                            <View style={styles.avatarContainer}>
-                                {avatarUrl ? (
-                                    <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-                                ) : (
-                                    <LinearGradient
-                                        colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.05)']}
-                                        style={styles.avatarBackground}
-                                    >
-                                        <Text style={styles.avatarText}>
-                                            {getInitials(user?.user_metadata?.full_name || user?.email || 'U')}
-                                        </Text>
-                                    </LinearGradient>
-                                )}
-                                <TouchableOpacity style={styles.cameraBtn} onPress={pickImage} disabled={uploading}>
-                                    {uploading ? <ActivityIndicator size="small" color="#4f46e5" /> : <Camera size={14} color="#4f46e5" />}
-                                </TouchableOpacity>
-                            </View>
-                            <Text style={styles.userName}>{user?.user_metadata?.full_name || 'Foydalanuvchi'}</Text>
-                            <Text style={styles.userEmail}>{user?.email}</Text>
-                        </View>
-                    </SafeAreaView>
-                </LinearGradient>
+        <SafeAreaView style={styles.container}>
+            <StatusBar barStyle="dark-content" />
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: vs(40) }}>
+                <View style={styles.header}>
+                    <Text style={styles.title}>Profil</Text>
+                    <Text style={styles.subtitle}>Shaxsiy ma'lumotlaringizni boshqaring</Text>
+                </View>
 
-                <View style={styles.content}>
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    >
-                        {/* Personal Info Card */}
-                        <View style={styles.card}>
-                            <View style={styles.cardHeader}>
-                                <User size={20} color="#4f46e5" />
-                                <Text style={styles.cardTitle}>Shaxsiy ma'lumotlar</Text>
-                            </View>
-
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>To'liq ism</Text>
-                                <View style={[styles.inputWrapper, errors.full_name && styles.inputError]}>
-                                    <Controller
-                                        control={control}
-                                        name="full_name"
-                                        render={({ field: { onChange, value } }) => (
-                                            <TextInput
-                                                style={styles.input}
-                                                placeholder="Ism Familiya"
-                                                placeholderTextColor="#94a3b8"
-                                                value={value}
-                                                onChangeText={onChange}
-                                            />
-                                        )}
-                                    />
-                                </View>
-                                {errors.full_name && <Text style={styles.errorText}>{errors.full_name.message}</Text>}
-                            </View>
-
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Email</Text>
-                                <View style={[styles.inputWrapper, styles.inputDisabled]}>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={user?.email}
-                                        editable={false}
-                                    />
-                                    <Mail size={18} color="#94a3b8" />
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* Security Card */}
-                        <View style={styles.card}>
-                            <View style={styles.cardHeader}>
-                                <Shield size={20} color="#4f46e5" />
-                                <Text style={styles.cardTitle}>Xavfsizlik</Text>
-                            </View>
-
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Yangi parol</Text>
-                                <View style={[styles.inputWrapper, errors.password && styles.inputError]}>
-                                    <Controller
-                                        control={control}
-                                        name="password"
-                                        render={({ field: { onChange, value } }) => (
-                                            <TextInput
-                                                style={styles.input}
-                                                placeholder="••••••••"
-                                                placeholderTextColor="#94a3b8"
-                                                secureTextEntry={!showPassword}
-                                                value={value}
-                                                onChangeText={onChange}
-                                            />
-                                        )}
-                                    />
-                                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                                        {showPassword ? <EyeOff size={18} color="#94a3b8" /> : <Eye size={18} color="#94a3b8" />}
-                                    </TouchableOpacity>
-                                </View>
-                                {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
-                            </View>
-
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Parolni tasdiqlash</Text>
-                                <View style={[styles.inputWrapper, errors.confirm_password && styles.inputError]}>
-                                    <Controller
-                                        control={control}
-                                        name="confirm_password"
-                                        render={({ field: { onChange, value } }) => (
-                                            <TextInput
-                                                style={styles.input}
-                                                placeholder="••••••••"
-                                                placeholderTextColor="#94a3b8"
-                                                secureTextEntry={!showPassword}
-                                                value={value}
-                                                onChangeText={onChange}
-                                            />
-                                        )}
-                                    />
-                                </View>
-                                {errors.confirm_password && <Text style={styles.errorText}>{errors.confirm_password.message}</Text>}
-                            </View>
-                        </View>
-
-
-                        <TouchableOpacity
-                            style={[styles.saveBtn, loading && styles.saveBtnDisabled]}
-                            onPress={handleSubmit(onSubmit)}
-                            disabled={loading}
-                        >
+                <View style={styles.avatarSection}>
+                    <View style={styles.avatarWrapper}>
+                        {avatarUrl ? (
+                            <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+                        ) : (
                             <LinearGradient
                                 colors={['#4f46e5', '#3730a3']}
-                                style={styles.saveGradient}
+                                style={styles.avatarPlaceholder}
                             >
-                                {loading ? (
-                                    <ActivityIndicator color="#fff" />
-                                ) : (
-                                    <>
-                                        <Lock size={18} color="#fff" />
-                                        <Text style={styles.saveBtnText}>Saqlash</Text>
-                                    </>
-                                )}
+                                <User size={normalize(48)} color="#fff" />
                             </LinearGradient>
+                        )}
+                        <TouchableOpacity style={styles.cameraBtn} onPress={pickImage} disabled={uploading}>
+                            {uploading ? (
+                                <ActivityIndicator size="small" color="#4f46e5" />
+                            ) : (
+                                <Camera size={normalize(18)} color="#4f46e5" />
+                            )}
                         </TouchableOpacity>
+                    </View>
+                </View>
 
-                        <TouchableOpacity
-                            style={styles.signOutBtn}
-                            onPress={handleSignOut}
+                <View style={styles.formContainer}>
+                    <Text style={styles.sectionLabel}>Shaxsiy ma'lumotlar</Text>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>To'liq ism</Text>
+                        <View style={styles.inputWrapper}>
+                            <User size={normalize(20)} color="#94a3b8" style={styles.inputIcon} />
+                            <Controller
+                                control={control}
+                                name="full_name"
+                                render={({ field: { onChange, value } }) => (
+                                    <TextInput
+                                        style={styles.input}
+                                        value={value}
+                                        onChangeText={onChange}
+                                        placeholder="To'liq ismingiz"
+                                        placeholderTextColor="#94a3b8"
+                                    />
+                                )}
+                            />
+                        </View>
+                        {errors.full_name && <Text style={styles.errorText}>{errors.full_name.message}</Text>}
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Email</Text>
+                        <View style={[styles.inputWrapper, styles.inputDisabled]}>
+                            <Mail size={normalize(20)} color="#cbd5e1" style={styles.inputIcon} />
+                            <TextInput
+                                style={[styles.input, { color: '#94a3b8' }]}
+                                value={user?.email}
+                                editable={false}
+                            />
+                        </View>
+                    </View>
+
+                    <TouchableOpacity
+                        style={styles.submitBtn}
+                        onPress={handleSubmit(onSubmit)}
+                        disabled={loading}
+                    >
+                        <LinearGradient
+                            colors={['#4f46e5', '#3730a3']}
+                            style={styles.submitGradient}
                         >
-                            <LogOut size={18} color="#ef4444" />
-                            <Text style={styles.signOutText}>Tizimdan chiqish</Text>
-                            <ChevronRight size={18} color="#ef4444" />
-                        </TouchableOpacity>
+                            {loading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.submitText}>O'zgarishlarni saqlash</Text>
+                            )}
+                        </LinearGradient>
+                    </TouchableOpacity>
 
-                        <Text style={styles.versionText}>Versiya 1.2.0 • Distitrack</Text>
-                    </KeyboardAvoidingView>
+                    <Text style={[styles.sectionLabel, { marginTop: vs(32) }]}>Hisob</Text>
+
+                    <TouchableOpacity style={styles.menuItem} onPress={signOut}>
+                        <View style={styles.menuItemLeft}>
+                            <View style={[styles.menuIconBox, { backgroundColor: '#fef2f2' }]}>
+                                <LogOut size={normalize(20)} color="#ef4444" />
+                            </View>
+                            <Text style={[styles.menuText, { color: '#ef4444' }]}>Chiqish</Text>
+                        </View>
+                        <ChevronRight size={normalize(20)} color="#cbd5e1" />
+                    </TouchableOpacity>
                 </View>
             </ScrollView>
-        </View>
+        </SafeAreaView>
     );
 };
 
@@ -329,208 +248,157 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f8fafc',
     },
-    headerGradient: {
-        paddingBottom: 40,
-        borderBottomLeftRadius: 32,
-        borderBottomRightRadius: 32,
+    header: {
+        paddingHorizontal: s(24),
+        paddingTop: vs(20),
+        marginBottom: vs(32),
     },
-    headerContent: {
-        alignItems: 'center',
-        paddingTop: 20,
-    },
-    avatarContainer: {
-        position: 'relative',
-        marginBottom: 16,
-    },
-    avatarBackground: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.3)',
-    },
-    avatarText: {
-        fontSize: 36,
+    title: {
+        fontSize: normalize(32),
         fontWeight: '900',
-        color: '#fff',
+        color: '#1e293b',
+        letterSpacing: -1,
+    },
+    subtitle: {
+        fontSize: normalize(14),
+        color: '#64748b',
+        fontWeight: '500',
+    },
+    avatarSection: {
+        alignItems: 'center',
+        marginBottom: vs(32),
+    },
+    avatarWrapper: {
+        position: 'relative',
     },
     avatarImage: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.3)',
+        width: s(120),
+        height: s(120),
+        borderRadius: s(40),
+        borderWidth: 4,
+        borderColor: '#fff',
+    },
+    avatarPlaceholder: {
+        width: s(120),
+        height: s(120),
+        borderRadius: s(40),
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 4,
+        borderColor: '#fff',
     },
     cameraBtn: {
         position: 'absolute',
-        bottom: 0,
-        right: 0,
+        bottom: -s(4),
+        right: -s(4),
+        width: s(40),
+        height: s(40),
+        borderRadius: s(14),
         backgroundColor: '#fff',
-        width: 32,
-        height: 32,
-        borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
         elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
+        borderWidth: 3,
+        borderColor: '#f8fafc',
     },
-    userName: {
-        fontSize: 24,
-        fontWeight: '900',
-        color: '#fff',
-        marginBottom: 4,
+    formContainer: {
+        paddingHorizontal: s(24),
     },
-    userEmail: {
-        fontSize: 14,
-        color: 'rgba(255,255,255,0.7)',
-        fontWeight: '600',
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: 24,
-        marginTop: -30,
-        paddingBottom: 100,
-    },
-    card: {
-        backgroundColor: '#fff',
-        borderRadius: 24,
-        padding: 20,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#f1f5f9',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.03,
-        shadowRadius: 20,
-        elevation: 2,
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        marginBottom: 20,
-    },
-    cardTitle: {
-        fontSize: 16,
+    sectionLabel: {
+        fontSize: normalize(12),
         fontWeight: '800',
-        color: '#1e293b',
-    },
-    inputGroup: {
-        marginBottom: 16,
-    },
-    label: {
-        fontSize: 11,
-        fontWeight: '800',
-        color: '#64748b',
+        color: '#94a3b8',
         textTransform: 'uppercase',
         letterSpacing: 1,
-        marginBottom: 8,
-        marginLeft: 4,
+        marginBottom: vs(16),
+        marginLeft: s(4),
+    },
+    inputGroup: {
+        marginBottom: vs(20),
+    },
+    label: {
+        fontSize: normalize(13),
+        fontWeight: '700',
+        color: '#64748b',
+        marginBottom: vs(8),
+        marginLeft: s(4),
     },
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f8fafc',
-        borderRadius: 14,
+        backgroundColor: '#fff',
+        borderRadius: s(16),
+        paddingHorizontal: s(16),
+        height: vs(54),
         borderWidth: 1,
-        borderColor: '#e2e8f0',
-        paddingHorizontal: 16,
-        height: 52,
+        borderColor: '#f1f5f9',
+    },
+    inputIcon: {
+        marginRight: s(12),
+    },
+    input: {
+        flex: 1,
+        fontSize: normalize(15),
+        fontWeight: '600',
+        color: '#1e293b',
     },
     inputDisabled: {
         backgroundColor: '#f1f5f9',
         borderColor: '#f1f5f9',
     },
-    inputError: {
-        borderColor: '#ef4444',
-    },
-    input: {
-        flex: 1,
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#1e293b',
-    },
     errorText: {
         color: '#ef4444',
-        fontSize: 11,
-        marginTop: 4,
-        marginLeft: 4,
+        fontSize: normalize(11),
+        marginTop: vs(4),
+        marginLeft: s(4),
     },
-    saveBtn: {
-        borderRadius: 18,
+    submitBtn: {
+        marginTop: vs(12),
+        borderRadius: s(16),
         overflow: 'hidden',
-        marginTop: 8,
-        elevation: 8,
+        elevation: 4,
         shadowColor: '#4f46e5',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
     },
-    saveGradient: {
-        flexDirection: 'row',
+    submitGradient: {
+        paddingVertical: vs(18),
         alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 18,
-        gap: 10,
     },
-    saveBtnText: {
+    submitText: {
         color: '#fff',
-        fontSize: 16,
-        fontWeight: '900',
-    },
-    saveBtnDisabled: {
-        opacity: 0.7,
-    },
-    signOutBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff1f2',
-        padding: 18,
-        borderRadius: 18,
-        marginTop: 24,
-        gap: 12,
-        borderWidth: 1,
-        borderColor: '#ffe4e6',
-    },
-    signOutText: {
-        flex: 1,
-        fontSize: 15,
+        fontSize: normalize(16),
         fontWeight: '800',
-        color: '#ef4444',
-    },
-    versionText: {
-        textAlign: 'center',
-        marginTop: 32,
-        fontSize: 12,
-        color: '#94a3b8',
-        fontWeight: '600',
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 12,
+        backgroundColor: '#fff',
+        padding: s(16),
+        borderRadius: s(20),
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
     },
     menuItemLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: s(12),
     },
     menuIconBox: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
+        width: s(40),
+        height: s(40),
+        borderRadius: s(12),
         justifyContent: 'center',
         alignItems: 'center',
     },
-    menuItemText: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#1e293b',
-    },
+    menuText: {
+        fontSize: normalize(15),
+        fontWeight: '700',
+    }
 });

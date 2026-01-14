@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { Book, History, PieChart, Moon, Sun, LogOut, Store, Package, Palette, Check } from 'lucide-react';
+import { Book, History, PieChart, Moon, Sun, LogOut, Store, Package, Palette, Check, Menu, X as CloseIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const Navbar: React.FC = () => {
     const { isDark, toggleTheme, accentColor, setAccentColor } = useTheme();
     const { logout, user, profile } = useAuth();
     const [showColorPicker, setShowColorPicker] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const colors = [
         { id: 'blue', label: 'Blue', class: 'bg-blue-500' },
@@ -22,56 +23,55 @@ export const Navbar: React.FC = () => {
         <nav className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-50 transition-colors">
             <div className="max-w-7xl mx-auto px-4 md:px-8">
                 <div className="flex justify-between items-center h-20">
-                    <div className="flex items-center gap-4 sm:gap-10">
+                    <div className="hidden lg:flex items-center gap-2 sm:gap-6">
                         <NavLink
                             to="/dashboard"
                             className={({ isActive }) => `
-                            flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base sm:text-lg
+                            flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base
                             ${isActive
                                     ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/30'
                                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}
                         `}
                         >
-                            <Book size={24} />
+                            <Book size={20} />
                             Daftar
                         </NavLink>
-                        {/* Only show Tarix, Marketlar, and Mahsulotlar for Seller role */}
                         {profile?.role !== 'market' && (
                             <>
                                 <NavLink
                                     to="/records"
                                     className={({ isActive }) => `
-                                    flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base sm:text-lg
+                                    flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base
                                     ${isActive
                                             ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/30'
                                             : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}
                                 `}
                                 >
-                                    <History size={24} />
+                                    <History size={20} />
                                     Tarix
                                 </NavLink>
                                 <NavLink
                                     to="/markets"
                                     className={({ isActive }) => `
-                                    flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base sm:text-lg
+                                    flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base
                                     ${isActive
                                             ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/30'
                                             : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}
                                 `}
                                 >
-                                    <Store size={24} />
+                                    <Store size={20} />
                                     Marketlar
                                 </NavLink>
                                 <NavLink
                                     to="/products"
                                     className={({ isActive }) => `
-                                    flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base sm:text-lg
+                                    flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base
                                     ${isActive
                                             ? 'text-pink-600 bg-pink-50 dark:bg-pink-900/30'
                                             : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}
                                 `}
                                 >
-                                    <Package size={24} />
+                                    <Package size={20} />
                                     Mahsulotlar
                                 </NavLink>
                             </>
@@ -79,18 +79,25 @@ export const Navbar: React.FC = () => {
                         <NavLink
                             to="/hisobot"
                             className={({ isActive }) => `
-                            flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base sm:text-lg
+                            flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base
                             ${isActive
                                     ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30'
                                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}
                         `}
                         >
-                            <PieChart size={24} />
+                            <PieChart size={20} />
                             Hisob-kitob
                         </NavLink>
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {/* Mobile Menu Toggle */}
+                        <button
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            className="lg:hidden p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:scale-110 transition-transform shadow-sm mr-2"
+                        >
+                            {isMobileMenuOpen ? <CloseIcon size={24} /> : <Menu size={24} />}
+                        </button>
                         {/* Theme Trigger */}
                         <div className="relative">
                             <button
@@ -169,6 +176,90 @@ export const Navbar: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Mobile Navigation Dropdown */}
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="lg:hidden border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden"
+                    >
+                        <div className="flex flex-col p-4 gap-2">
+                            <NavLink
+                                to="/dashboard"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className={({ isActive }) => `
+                                flex items-center gap-3 px-5 py-4 rounded-2xl font-black transition-all
+                                ${isActive
+                                        ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/30 shadow-sm'
+                                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}
+                            `}
+                            >
+                                <Book size={20} />
+                                Daftar
+                            </NavLink>
+                            {profile?.role !== 'market' && (
+                                <>
+                                    <NavLink
+                                        to="/records"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className={({ isActive }) => `
+                                        flex items-center gap-3 px-5 py-4 rounded-2xl font-black transition-all
+                                        ${isActive
+                                                ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/30 shadow-sm'
+                                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}
+                                    `}
+                                    >
+                                        <History size={20} />
+                                        Tarix
+                                    </NavLink>
+                                    <NavLink
+                                        to="/markets"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className={({ isActive }) => `
+                                        flex items-center gap-3 px-5 py-4 rounded-2xl font-black transition-all
+                                        ${isActive
+                                                ? 'text-purple-600 bg-purple-50 dark:bg-purple-900/30 shadow-sm'
+                                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}
+                                    `}
+                                    >
+                                        <Store size={20} />
+                                        Marketlar
+                                    </NavLink>
+                                    <NavLink
+                                        to="/products"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className={({ isActive }) => `
+                                        flex items-center gap-3 px-5 py-4 rounded-2xl font-black transition-all
+                                        ${isActive
+                                                ? 'text-pink-600 bg-pink-50 dark:bg-pink-900/30 shadow-sm'
+                                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}
+                                    `}
+                                    >
+                                        <Package size={20} />
+                                        Mahsulotlar
+                                    </NavLink>
+                                </>
+                            )}
+                            <NavLink
+                                to="/hisobot"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className={({ isActive }) => `
+                                flex items-center gap-3 px-5 py-4 rounded-2xl font-black transition-all
+                                ${isActive
+                                        ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 shadow-sm'
+                                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}
+                            `}
+                            >
+                                <PieChart size={20} />
+                                Hisob-kitob
+                            </NavLink>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </nav>
     );
 };

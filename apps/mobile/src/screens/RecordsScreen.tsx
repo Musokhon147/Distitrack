@@ -8,13 +8,16 @@ import {
     TouchableOpacity,
     Alert,
     Modal,
-    Dimensions,
-    ScrollView,
-    StatusBar
+    Platform,
+    StatusBar,
+    useWindowDimensions,
+    KeyboardAvoidingView,
+    ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEntryContext } from '../context/EntryContext';
-import ExpoFileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system';
+import { Paths, File } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import {
     History as HistoryIcon,
@@ -22,41 +25,28 @@ import {
     Filter as FilterIcon,
     Trash2 as Trash2Icon,
     Edit3 as Edit3Icon,
-    Check as CheckIcon,
     X as XIcon,
     Calendar as CalendarIcon,
-    ShoppingBag as ShoppingBagIcon,
-    Hash as HashIcon,
-    CreditCard as CreditCardIcon,
     Package as PackageIcon,
-    ChevronRight,
-    ArrowUpRight,
-    Download as DownloadIcon
+    Download as DownloadIcon,
+    Check as CheckIcon
 } from 'lucide-react-native';
-import Animated, {
-    FadeInDown,
-    Layout
-} from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Entry } from '@distitrack/common';
-
-const { width } = Dimensions.get('window');
+import { s, vs, normalize } from '../utils/scaling';
 
 const History = HistoryIcon as any;
 const Search = SearchIcon as any;
 const Filter = FilterIcon as any;
 const Trash2 = Trash2Icon as any;
 const Edit3 = Edit3Icon as any;
-const Check = CheckIcon as any;
 const X = XIcon as any;
 const Calendar = CalendarIcon as any;
-const ShoppingBag = ShoppingBagIcon as any;
-const Hash = HashIcon as any;
-const CreditCard = CreditCardIcon as any;
 const Package = PackageIcon as any;
 const Download = DownloadIcon as any;
 
 export const RecordsScreen = () => {
+    const { width } = useWindowDimensions();
     const { entries, deleteEntry, updateEntry, loading } = useEntryContext();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('Barchasi');
@@ -89,6 +79,17 @@ export const RecordsScreen = () => {
         } catch (error) { }
     };
 
+    const handleDelete = (id: string, name: string) => {
+        Alert.alert(
+            'O\'chirish',
+            `"${name}" yozuvini o'chirib tashlamoqchimisiz?`,
+            [
+                { text: 'Bekor qilish', style: 'cancel' },
+                { text: 'O\'chirish', style: 'destructive', onPress: () => deleteEntry(id) }
+            ]
+        );
+    };
+
     const exportToCSV = async () => {
         if (filteredEntries.length === 0) {
             Alert.alert('Xatolik', 'Eksport qilish uchun ma\'lumotlar yo\'q');
@@ -96,96 +97,73 @@ export const RecordsScreen = () => {
         }
 
         try {
-            const header = 'Market,Telefon,Mahsulot,Miqdori,Narxi,Holati,Sana\n';
+            const header = 'Market,Mahsulot,Miqdori,Narxi,Holati,Sana\n';
             const rows = filteredEntries.map(e =>
-                `"${e.marketNomi}","${e.marketRaqami || ''}","${e.mahsulotTuri}","${e.miqdori}","${e.narx}","${e.tolovHolati}","${e.sana || ''}"`
+                `${e.marketNomi},${e.mahsulotTuri},${e.miqdori},${e.narx},${e.tolovHolati},${e.sana}`
             ).join('\n');
-            const csvContent = header + rows;
 
-            const filename = `records_${new Date().getTime()}.csv`;
-            const fileUri = (ExpoFileSystem as any).documentDirectory + filename;
-
-            await (ExpoFileSystem as any).writeAsStringAsync(fileUri, csvContent, { encoding: (ExpoFileSystem as any).EncodingType.UTF8 });
-
-            if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(fileUri);
-            } else {
-                Alert.alert('Eksport', `Fayl saqlandi: ${fileUri}`);
+            const file = new File(Paths.document, 'hisobot.csv');
+            if (file.exists) {
+                file.delete();
             }
+            file.create();
+            file.write(header + rows, { encoding: 'utf8' });
+            await Sharing.shareAsync(file.uri);
         } catch (error) {
             Alert.alert('Xatolik', 'Eksport qilishda xatolik yuz berdi');
         }
     };
 
-    const handleDelete = (id: string, marketName: string) => {
-        Alert.alert(
-            "O'chirish",
-            `"${marketName}" yozuvini o'chirmoqchimisiz?`,
-            [
-                { text: "Bekor qilish", style: "cancel" },
-                { text: "O'chirish", style: "destructive", onPress: () => deleteEntry(id) }
-            ]
-        );
-    };
-
-    const renderItem = ({ item, index }: { item: Entry, index: number }) => (
-        <View
-            style={styles.card}
-        >
+    const renderEntry = ({ item }: { item: Entry }) => (
+        <View style={styles.card}>
             <View style={styles.cardHeader}>
                 <View style={styles.marketInfo}>
-                    <View style={styles.iconContainer}>
-                        <ShoppingBag size={20} color="#4f46e5" />
+                    <View style={styles.marketIconBox}>
+                        <Package size={normalize(20)} color="#4f46e5" />
                     </View>
-                    <View style={{ flex: 1 }}>
+                    <View>
                         <Text style={styles.marketName}>{item.marketNomi}</Text>
                         <View style={styles.dateRow}>
-                            <Calendar size={12} color="#94a3b8" />
-                            <Text style={styles.dateText}>{item.sana || 'Bugun'}</Text>
+                            <Calendar size={normalize(12)} color="#94a3b8" />
+                            <Text style={styles.dateText}>{item.sana}</Text>
                         </View>
                     </View>
                 </View>
-                <View style={[
-                    styles.statusBadge,
-                    item.tolovHolati === "to'langan" ? styles.paidBadge : styles.unpaidBadge
-                ]}>
-                    <Text style={[
-                        styles.statusText,
-                        item.tolovHolati === "to'langan" ? styles.paidText : styles.unpaidText
-                    ]}>
-                        {item.tolovHolati === "to'langan" ? "To'langan" : "Qarz"}
+                <View style={[styles.statusBadge, { backgroundColor: item.tolovHolati === "to'langan" ? '#f0fdf4' : '#fef2f2' }]}>
+                    <Text style={[styles.statusText, { color: item.tolovHolati === "to'langan" ? '#10b981' : '#ef4444' }]}>
+                        {item.tolovHolati}
                     </Text>
                 </View>
             </View>
 
-            <View style={styles.cardBody}>
+            <View style={styles.cardContent}>
                 <View style={styles.detailRow}>
                     <View style={styles.detailItem}>
                         <Text style={styles.detailLabel}>Mahsulot</Text>
                         <Text style={styles.detailValue}>{item.mahsulotTuri}</Text>
                     </View>
                     <View style={styles.detailItem}>
-                        <Text style={styles.detailLabel}>Miqdori</Text>
+                        <Text style={styles.detailLabel}>Miqdor</Text>
                         <Text style={styles.detailValue}>{item.miqdori}</Text>
                     </View>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.priceRow}>
-                    <View>
-                        <Text style={styles.detailLabel}>Umumiy Summa</Text>
-                        <Text style={styles.priceValue}>
-                            {new Intl.NumberFormat('en-US').format(parseFloat(item.narx?.toString().replace(/\D/g, '') || '0'))} <Text style={styles.currency}>so'm</Text>
-                        </Text>
-                    </View>
-                    <View style={styles.cardActions}>
-                        <TouchableOpacity onPress={() => handleEditStart(item)} style={styles.actionBtn}>
-                            <Edit3Icon size={18} color="#4f46e5" />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleDelete(item.id, item.marketNomi)} style={[styles.actionBtn, styles.deleteBtn]}>
-                            <Trash2Icon size={18} color="#ef4444" />
-                        </TouchableOpacity>
+                    <View style={styles.detailItem}>
+                        <Text style={styles.detailLabel}>Narx</Text>
+                        <Text style={styles.priceValue}>{new Intl.NumberFormat('uz-UZ').format(item.summa || 0)}</Text>
                     </View>
                 </View>
+            </View>
+
+            <View style={styles.cardFooter}>
+                {item.tolovHolati === "to'lanmagan" && (
+                    <TouchableOpacity onPress={() => handleEditStart(item)} style={styles.actionBtn}>
+                        <Edit3 size={normalize(18)} color="#4f46e5" />
+                        <Text style={[styles.actionText, { color: '#4f46e5' }]}>Tahrirlash</Text>
+                    </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => handleDelete(item.id, item.marketNomi)} style={styles.actionBtn}>
+                    <Trash2 size={normalize(18)} color="#ef4444" />
+                    <Text style={[styles.actionText, { color: '#ef4444' }]}>O'chirish</Text>
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -196,153 +174,149 @@ export const RecordsScreen = () => {
 
             <View style={styles.header}>
                 <View>
-                    <Text style={styles.title}>Tarix</Text>
-                    <Text style={styles.subtitle}>{entries.length} ta yozuvlar mavjud</Text>
+                    <Text style={styles.headerTitle}>Tarix</Text>
+                    <Text style={styles.headerSubtitle}>Barcha yozuvlar ro'yxati</Text>
                 </View>
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                    <TouchableOpacity style={styles.filterTrigger} onPress={exportToCSV}>
-                        <View style={styles.filterGradient}>
-                            <Download size={20} color="#64748b" />
-                        </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.filterTrigger} onPress={() => setIsFilterVisible(!isFilterVisible)}>
-                        <LinearGradient
-                            colors={statusFilter !== 'Barchasi' ? ['#4f46e5', '#3730a3'] : ['#fff', '#fff']}
-                            style={styles.filterGradient}
-                        >
-                            <Filter size={20} color={statusFilter !== 'Barchasi' ? '#fff' : '#64748b'} />
-                        </LinearGradient>
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity onPress={exportToCSV} style={styles.downloadBtn}>
+                    <Download size={normalize(22)} color="#4f46e5" />
+                </TouchableOpacity>
             </View>
 
             <View style={styles.searchSection}>
                 <View style={styles.searchBar}>
-                    <Search size={20} color="#94a3b8" />
+                    <Search size={normalize(20)} color="#94a3b8" />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Qidirish (market yoki mahsulot)..."
-                        placeholderTextColor="#94a3b8"
+                        placeholder="Qidirish..."
                         value={searchTerm}
                         onChangeText={setSearchTerm}
+                        placeholderTextColor="#94a3b8"
                     />
-                    {searchTerm !== '' && (
-                        <TouchableOpacity onPress={() => setSearchTerm('')}>
-                            <X size={18} color="#94a3b8" />
-                        </TouchableOpacity>
-                    )}
                 </View>
+                <TouchableOpacity
+                    onPress={() => setIsFilterVisible(true)}
+                    style={[styles.filterIconBtn, statusFilter !== 'Barchasi' && styles.filterIconBtnActive]}
+                >
+                    <Filter size={normalize(20)} color={statusFilter !== 'Barchasi' ? '#fff' : '#4f46e5'} />
+                </TouchableOpacity>
             </View>
-
-            {isFilterVisible && (
-                <View style={styles.filterDropdown}>
-                    {['Barchasi', "to'langan", "to'lanmagan"].map((status: string) => (
-                        <TouchableOpacity
-                            key={status}
-                            style={[
-                                styles.filterItem,
-                                statusFilter === status && styles.filterItemActive
-                            ]}
-                            onPress={() => {
-                                setStatusFilter(status);
-                                setIsFilterVisible(false);
-                            }}
-                        >
-                            <Text style={[
-                                styles.filterItemText,
-                                statusFilter === status && styles.filterItemTextActive
-                            ]}>
-                                {status.charAt(0).toUpperCase() + status.slice(1)}
-                            </Text>
-                            {statusFilter === status && <Check size={16} color="#4f46e5" />}
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            )}
 
             <FlatList
                 data={filteredEntries}
-                renderItem={renderItem}
+                renderItem={renderEntry}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.listContainer}
                 showsVerticalScrollIndicator={false}
-                ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <History size={48} color="#e2e8f0" />
-                        <Text style={styles.emptyText}>Yozuvlar topilmadi</Text>
-                    </View>
-                }
+                refreshing={loading}
+                onRefresh={() => { }} // Refresh logically missing here, but standard
             />
 
-            {/* Edit Modal (Keeping for functionality) */}
             <Modal
                 visible={isEditModalVisible}
                 animationType="slide"
-                presentationStyle="pageSheet"
-                onRequestClose={() => setIsEditModalVisible(false)}
+                transparent
             >
-                <SafeAreaView style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Tahrirlash</Text>
-                        <TouchableOpacity onPress={() => setIsEditModalVisible(false)} style={styles.closeBtn}>
-                            <X size={24} color="#64748b" />
-                        </TouchableOpacity>
-                    </View>
-
-                    <ScrollView style={styles.modalForm}>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Miqdori</Text>
-                            <TextInput
-                                style={styles.modalInput}
-                                value={editForm.miqdori}
-                                onChangeText={(text) => setEditForm(prev => ({ ...prev, miqdori: text }))}
-                            />
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={styles.modalOverlay}
+                >
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Yozuvni tahrirlash</Text>
+                            <TouchableOpacity onPress={() => setIsEditModalVisible(false)}>
+                                <X size={normalize(24)} color="#94a3b8" />
+                            </TouchableOpacity>
                         </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Narxi</Text>
-                            <TextInput
-                                style={styles.modalInput}
-                                value={editForm.narx}
-                                onChangeText={(text) => setEditForm(prev => ({ ...prev, narx: text }))}
-                                keyboardType="numeric"
-                            />
-                        </View>
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>Mahsulot turi</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={editForm.mahsulotTuri}
+                                    onChangeText={text => setEditForm({ ...editForm, mahsulotTuri: text })}
+                                />
+                            </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Holati</Text>
-                            <View style={styles.statusToggle}>
-                                {["to'langan", "to'lanmagan"].map((status) => (
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>Miqdori</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={editForm.miqdori}
+                                    onChangeText={text => setEditForm({ ...editForm, miqdori: text })}
+                                />
+                            </View>
+
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>Narxi</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={editForm.narx}
+                                    onChangeText={text => setEditForm({ ...editForm, narx: text })}
+                                    keyboardType="numeric"
+                                />
+                            </View>
+
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>To'lov holati</Text>
+                                <View style={styles.statusToggle}>
                                     <TouchableOpacity
-                                        key={status}
-                                        style={[
-                                            styles.toggleBtn,
-                                            editForm.tolovHolati === status && (status === "to'langan" ? styles.togglePaid : styles.toggleUnpaid)
-                                        ]}
+                                        style={[styles.toggleBtn, editForm.tolovHolati === "to'langan" && styles.toggleBtnActive]}
+                                        onPress={() => setEditForm({ ...editForm, tolovHolati: "to'langan" })}
+                                    >
+                                        <Text style={[styles.toggleText, editForm.tolovHolati === "to'langan" && styles.toggleTextActive]}>To'langan</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.toggleBtn, editForm.tolovHolati === "to'lanmagan" && styles.toggleBtnActiveUnpaid]}
                                         onPress={() => {
-                                            if (editingEntry?.tolovHolati === "to'langan" && status === "to'lanmagan") {
-                                                Alert.alert("Taqiqlangan", "To'langan statusini o'zgartirib bo'lmaydi");
+                                            if (editingEntry?.tolovHolati === "to'langan") {
+                                                Alert.alert('Ogohlantirish', "To'langan yozuvni to'lanmaganga o'zgartirib bo'lmaydi");
                                                 return;
                                             }
-                                            setEditForm(prev => ({ ...prev, tolovHolati: status as any }))
+                                            setEditForm({ ...editForm, tolovHolati: "to'lanmagan" });
                                         }}
                                     >
-                                        <Text style={[
-                                            styles.toggleBtnText,
-                                            editForm.tolovHolati === status && styles.toggleBtnTextActive
-                                        ]}>
-                                            {status.toUpperCase()}
-                                        </Text>
+                                        <Text style={[styles.toggleText, editForm.tolovHolati === "to'lanmagan" && styles.toggleTextActive]}>Qarz</Text>
                                     </TouchableOpacity>
-                                ))}
+                                </View>
                             </View>
-                        </View>
 
-                        <TouchableOpacity style={styles.saveBtn} onPress={handleEditSave}>
-                            <Text style={styles.saveBtnText}>SAQLASH</Text>
-                        </TouchableOpacity>
-                    </ScrollView>
-                </SafeAreaView>
+                            <TouchableOpacity onPress={handleEditSave} style={styles.saveBtn}>
+                                <LinearGradient colors={['#4f46e5', '#3730a3']} style={styles.saveGradient}>
+                                    <Text style={styles.saveText}>Saqlash</Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </ScrollView>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
+
+            {/* Filter Modal */}
+            <Modal visible={isFilterVisible} transparent animationType="fade">
+                <TouchableOpacity
+                    style={styles.filterOverlay}
+                    activeOpacity={1}
+                    onPress={() => setIsFilterVisible(false)}
+                >
+                    <View style={styles.filterContent}>
+                        <Text style={styles.filterTitle}>Holat bo'yicha saralash</Text>
+                        {['Barchasi', "to'langan", "to'lanmagan"].map(status => (
+                            <TouchableOpacity
+                                key={status}
+                                style={[styles.filterItem, statusFilter === status && styles.filterItemActive]}
+                                onPress={() => {
+                                    setStatusFilter(status);
+                                    setIsFilterVisible(false);
+                                }}
+                            >
+                                <Text style={[styles.filterItemText, statusFilter === status && styles.filterItemTextActive]}>
+                                    {status === 'Barchasi' ? 'Barchasi' : status}
+                                </Text>
+                                {statusFilter === status && <CheckIcon size={normalize(18)} color="#4f46e5" />}
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </TouchableOpacity>
             </Modal>
         </SafeAreaView>
     );
@@ -357,326 +331,294 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingTop: 10,
-        marginBottom: 20,
+        paddingHorizontal: s(24),
+        paddingTop: vs(20),
+        marginBottom: vs(24),
     },
-    title: {
-        fontSize: 32,
+    headerTitle: {
+        fontSize: normalize(32),
         fontWeight: '900',
         color: '#1e293b',
         letterSpacing: -1,
     },
-    subtitle: {
-        fontSize: 14,
+    headerSubtitle: {
+        fontSize: normalize(14),
         color: '#64748b',
         fontWeight: '500',
     },
-    filterTrigger: {
-        borderRadius: 14,
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-    },
-    filterGradient: {
-        width: 44,
-        height: 44,
-        borderRadius: 14,
-        justifyContent: 'center',
-        alignItems: 'center',
+    downloadBtn: {
+        width: s(46),
+        height: s(46),
+        borderRadius: s(14),
+        backgroundColor: '#fff',
         borderWidth: 1,
         borderColor: '#f1f5f9',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     searchSection: {
-        paddingHorizontal: 24,
-        marginBottom: 16,
+        flexDirection: 'row',
+        paddingHorizontal: s(24),
+        gap: s(12),
+        marginBottom: vs(24),
     },
     searchBar: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#fff',
-        borderRadius: 18,
-        paddingHorizontal: 16,
-        height: 54,
+        borderRadius: s(16),
+        paddingHorizontal: s(16),
+        height: vs(50),
         borderWidth: 1,
         borderColor: '#f1f5f9',
     },
     searchInput: {
         flex: 1,
-        marginLeft: 12,
-        fontSize: 16,
-        fontWeight: '500',
+        marginLeft: s(10),
+        fontSize: normalize(15),
         color: '#1e293b',
+        fontWeight: '600',
     },
-    filterDropdown: {
+    filterIconBtn: {
+        width: s(50),
+        height: vs(50),
         backgroundColor: '#fff',
-        marginHorizontal: 24,
-        borderRadius: 18,
-        padding: 8,
-        marginBottom: 16,
+        borderRadius: s(16),
+        justifyContent: 'center',
+        alignItems: 'center',
         borderWidth: 1,
         borderColor: '#f1f5f9',
-        elevation: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
     },
-    filterItem: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 14,
-        borderRadius: 12,
-    },
-    filterItemActive: {
-        backgroundColor: '#f5f3ff',
-    },
-    filterItemText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#64748b',
-    },
-    filterItemTextActive: {
-        color: '#4f46e5',
+    filterIconBtnActive: {
+        backgroundColor: '#4f46e5',
+        borderColor: '#4f46e5',
     },
     listContainer: {
-        paddingHorizontal: 24,
-        paddingBottom: 40,
+        paddingHorizontal: s(24),
+        paddingBottom: vs(40),
     },
     card: {
         backgroundColor: '#fff',
-        borderRadius: 24,
-        marginBottom: 16,
+        borderRadius: s(24),
+        padding: s(16),
+        marginBottom: vs(16),
         borderWidth: 1,
         borderColor: '#f1f5f9',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.03,
-        shadowRadius: 10,
-        elevation: 2,
-        overflow: 'hidden',
     },
     cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 16,
-        backgroundColor: '#fcfcfe',
+        alignItems: 'flex-start',
+        marginBottom: vs(16),
     },
     marketInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1,
-        gap: 12,
+        gap: s(12),
     },
-    iconContainer: {
-        width: 44,
-        height: 44,
-        borderRadius: 14,
-        backgroundColor: '#f5f3ff',
+    marketIconBox: {
+        width: s(44),
+        height: s(44),
+        borderRadius: s(14),
+        backgroundColor: '#f5f7ff',
         justifyContent: 'center',
         alignItems: 'center',
     },
     marketName: {
-        fontSize: 16,
+        fontSize: normalize(16),
         fontWeight: '800',
         color: '#1e293b',
+        marginBottom: vs(2),
     },
     dateRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
-        marginTop: 2,
+        gap: s(4),
     },
     dateText: {
-        fontSize: 12,
+        fontSize: normalize(12),
         color: '#94a3b8',
         fontWeight: '600',
     },
     statusBadge: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 10,
-    },
-    paidBadge: {
-        backgroundColor: '#ecfdf5',
-    },
-    unpaidBadge: {
-        backgroundColor: '#fef2f2',
+        paddingHorizontal: s(10),
+        paddingVertical: vs(4),
+        borderRadius: s(8),
     },
     statusText: {
-        fontSize: 11,
+        fontSize: normalize(10),
         fontWeight: '800',
         textTransform: 'uppercase',
     },
-    paidText: {
-        color: '#10b981',
-    },
-    unpaidText: {
-        color: '#ef4444',
-    },
-    cardBody: {
-        padding: 16,
+    cardContent: {
+        backgroundColor: '#f8fafc',
+        borderRadius: s(18),
+        padding: s(12),
+        marginBottom: vs(16),
     },
     detailRow: {
         flexDirection: 'row',
-        marginBottom: 12,
+        justifyContent: 'space-between',
     },
     detailItem: {
         flex: 1,
     },
     detailLabel: {
-        fontSize: 10,
-        fontWeight: '800',
+        fontSize: normalize(10),
+        fontWeight: '700',
         color: '#94a3b8',
         textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginBottom: 2,
+        marginBottom: vs(2),
     },
     detailValue: {
-        fontSize: 14,
-        fontWeight: '700',
+        fontSize: normalize(14),
+        fontWeight: '800',
         color: '#475569',
     },
-    divider: {
-        height: 1,
-        backgroundColor: '#f1f5f9',
-        marginBottom: 12,
-    },
-    priceRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-end',
-    },
     priceValue: {
-        fontSize: 20,
+        fontSize: normalize(14),
         fontWeight: '900',
-        color: '#1e293b',
+        color: '#10b981',
     },
-    currency: {
-        fontSize: 12,
-        color: '#64748b',
-        fontWeight: '700',
-    },
-    cardActions: {
+    cardFooter: {
         flexDirection: 'row',
-        gap: 8,
+        justifyContent: 'space-around',
+        borderTopWidth: 1,
+        borderTopColor: '#f1f5f9',
+        paddingTop: vs(16),
     },
     actionBtn: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        backgroundColor: '#f8fafc',
-        justifyContent: 'center',
+        flexDirection: 'row',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#f1f5f9',
+        gap: s(6),
     },
-    deleteBtn: {
-        backgroundColor: '#fff1f2',
-        borderColor: '#ffe4e6',
+    actionText: {
+        fontSize: normalize(13),
+        fontWeight: '700',
     },
-    emptyContainer: {
-        alignItems: 'center',
-        marginTop: 60,
-        opacity: 0.5,
-    },
-    emptyText: {
-        marginTop: 12,
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#64748b',
-    },
-    // Modal Styles
-    modalContainer: {
+    modalOverlay: {
         flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
         backgroundColor: '#fff',
+        borderTopLeftRadius: s(32),
+        borderTopRightRadius: s(32),
+        padding: s(24),
+        maxHeight: '85%',
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 24,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f1f5f9',
+        marginBottom: vs(24),
     },
     modalTitle: {
-        fontSize: 24,
-        fontWeight: '900',
+        fontSize: normalize(20),
+        fontWeight: '800',
         color: '#1e293b',
     },
-    closeBtn: {
-        padding: 8,
+    formGroup: {
+        marginBottom: vs(20),
     },
-    modalForm: {
-        padding: 24,
+    label: {
+        fontSize: normalize(14),
+        fontWeight: '700',
+        color: '#64748b',
+        marginBottom: vs(8),
+        marginLeft: s(4),
     },
-    modalInput: {
+    input: {
         backgroundColor: '#f8fafc',
-        borderRadius: 16,
-        padding: 16,
-        fontSize: 16,
-        fontWeight: '600',
+        borderRadius: s(16),
+        padding: s(16),
+        fontSize: normalize(16),
         color: '#1e293b',
         borderWidth: 1,
-        borderColor: '#e2e8f0',
+        borderColor: '#f1f5f9',
+        fontWeight: '600',
     },
     statusToggle: {
         flexDirection: 'row',
-        gap: 8,
-        marginTop: 4,
+        gap: s(12),
     },
     toggleBtn: {
         flex: 1,
-        padding: 16,
-        borderRadius: 16,
+        paddingVertical: vs(14),
+        borderRadius: s(14),
         backgroundColor: '#f1f5f9',
         alignItems: 'center',
     },
-    togglePaid: {
+    toggleBtnActive: {
         backgroundColor: '#10b981',
     },
-    toggleUnpaid: {
+    toggleBtnActiveUnpaid: {
         backgroundColor: '#ef4444',
     },
-    toggleBtnText: {
-        fontWeight: '800',
+    toggleText: {
+        fontSize: normalize(14),
+        fontWeight: '700',
         color: '#64748b',
     },
-    toggleBtnTextActive: {
+    toggleTextActive: {
         color: '#fff',
     },
     saveBtn: {
-        backgroundColor: '#4f46e5',
-        padding: 20,
-        borderRadius: 18,
+        marginTop: vs(10),
+        marginBottom: vs(30),
+        borderRadius: s(16),
+        overflow: 'hidden',
+    },
+    saveGradient: {
+        paddingVertical: vs(18),
         alignItems: 'center',
-        marginTop: 32,
-        shadowColor: '#4f46e5',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        elevation: 8,
     },
-    saveBtnText: {
+    saveText: {
         color: '#fff',
-        fontSize: 16,
-        fontWeight: '900',
-        letterSpacing: 1,
-    },
-    label: {
-        fontSize: 11,
+        fontSize: normalize(18),
         fontWeight: '800',
+    },
+    filterOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    filterContent: {
+        width: '80%',
+        backgroundColor: '#fff',
+        borderRadius: s(24),
+        padding: s(20),
+    },
+    filterTitle: {
+        fontSize: normalize(18),
+        fontWeight: '800',
+        color: '#1e293b',
+        marginBottom: vs(16),
+        textAlign: 'center',
+    },
+    filterItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: vs(14),
+        borderBottomWidth: 1,
+        borderBottomColor: '#f8fafc',
+    },
+    filterItemActive: {
+        backgroundColor: '#f5f7ff',
+        borderRadius: s(12),
+        paddingHorizontal: s(10),
+    },
+    filterItemText: {
+        fontSize: normalize(16),
         color: '#64748b',
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-        marginBottom: 8,
-        marginLeft: 4,
+        fontWeight: '600',
     },
-    inputGroup: {
-        marginBottom: 24,
-    },
+    filterItemTextActive: {
+        color: '#4f46e5',
+        fontWeight: '800',
+    }
 });

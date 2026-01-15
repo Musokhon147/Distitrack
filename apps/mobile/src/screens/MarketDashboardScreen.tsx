@@ -58,8 +58,48 @@ export default function MarketDashboardScreen() {
     const [marketName, setMarketName] = useState<string | null>(null);
     const [recentEntries, setRecentEntries] = useState<any[]>([]);
     const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'requests'>('dashboard');
+    const [allEntries, setAllEntries] = useState<any[]>([]);
 
     const theme = isDark ? darkStyles : lightStyles;
+
+    useEffect(() => {
+        if (activeTab === 'requests' && marketName) {
+            fetchAllMarketEntries();
+        }
+    }, [activeTab, marketName]);
+
+    const fetchAllMarketEntries = async () => {
+        setLoading(true);
+        try {
+            const { data: entriesData, error } = await supabase
+                .from('entries')
+                .select('*')
+                .eq('client', marketName)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (entriesData) {
+                const sellerIds = [...new Set(entriesData.map(e => e.user_id))];
+                const { data: profilesData } = await supabase
+                    .from('profiles')
+                    .select('id, full_name')
+                    .in('id', sellerIds);
+
+                const sellerMap = new Map((profilesData || []).map(p => [p.id, p.full_name]));
+                const mapped = entriesData.map(e => ({
+                    ...e,
+                    seller_name: sellerMap.get(e.user_id) || 'Noma\'lum'
+                }));
+                setAllEntries(mapped);
+            }
+        } catch (err) {
+            console.error('Error fetching all entries:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const stats = useMemo(() => {
         const total = recentEntries.length;
@@ -407,90 +447,208 @@ export default function MarketDashboardScreen() {
                     </View>
                 </View>
 
-                {/* Stats Section */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsList}>
-                    <StatCard
-                        label="Jami xaridlar"
-                        value={stats.total}
-                        icon={ShoppingBag}
-                        color="#10b981"
-                        subtitle={`${stats.paidCount} ta to'langan`}
-                        isDark={isDark}
-                    />
-                    <StatCard
-                        label="Jami summa"
-                        value={stats.totalAmount}
-                        icon={DollarSign}
-                        color="#4f46e5"
-                        subtitle="So'm"
-                        isDark={isDark}
-                    />
-                </ScrollView>
-
-                {/* Recent Purchases Section */}
-                <View style={styles.sectionHeader}>
-                    <Text style={[styles.subHeader, { color: theme.labelColor, marginBottom: 0 }]}>
-                        Oxirgi xaridlar ({recentEntries.length})
-                    </Text>
-                    <TouchableOpacity onPress={() => marketName && fetchRecentEntries(marketName)}>
-                        <Text style={styles.refreshText}>Yangilash</Text>
+                <View style={styles.tabContainer}>
+                    <TouchableOpacity
+                        style={[styles.tabBtn, activeTab === 'dashboard' && styles.activeTabBtn]}
+                        onPress={() => setActiveTab('dashboard')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'dashboard' && styles.activeTabText]}>Panel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tabBtn, activeTab === 'requests' && styles.activeTabBtn]}
+                        onPress={() => {
+                            setActiveTab('requests');
+                            fetchAllMarketEntries();
+                        }}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'requests' && styles.activeTabText]}>So'rovlar</Text>
                     </TouchableOpacity>
                 </View>
 
-                <View style={[styles.card, { backgroundColor: theme.cardBackground, borderColor: theme.borderColor, marginBottom: 40 }]}>
-                    {loading && recentEntries.length === 0 ? (
-                        <ActivityIndicator size="large" color="#4f46e5" style={{ padding: 40 }} />
-                    ) : recentEntries.length === 0 ? (
-                        <View style={{ padding: 40, alignItems: 'center' }}>
-                            <ShoppingBag size={40} color={isDark ? '#334155' : '#e2e8f0'} style={{ marginBottom: 12 }} />
-                            <Text style={{ color: theme.labelColor }}>Hozircha xaridlar yo'q</Text>
-                        </View>
-                    ) : (
-                        recentEntries.map(entry => (
-                            <TouchableOpacity
-                                key={entry.id}
-                                style={[styles.confirmationItem, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderColor: theme.borderColor }]}
-                                onPress={() => setSelectedEntry(entry)}
-                            >
-                                <View style={styles.itemRow}>
-                                    <View style={[styles.itemIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
-                                        <PackageIcon size={18} color="#10b981" />
-                                    </View>
-                                    <View style={styles.itemMain}>
-                                        <Text style={styles.labelSmall}>{formatDate(entry.created_at)}</Text>
-                                        <Text style={[styles.valueSmall, { color: theme.textColor }]}>{entry.mahsulot}</Text>
-                                    </View>
-                                    <View style={{ alignItems: 'flex-end' }}>
-                                        <Text style={styles.labelSmall}>Summa</Text>
-                                        <Text style={[styles.amount, { color: entry.holat === "to'langan" ? '#10b981' : '#ef4444' }]}>
-                                            {new Intl.NumberFormat('uz-UZ').format(Number(entry.summa || '0'))} so'm
-                                        </Text>
-                                    </View>
-                                </View>
+                {activeTab === 'dashboard' ? (
+                    <>
+                        {/* Stats Section */}
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsList}>
+                            <StatCard
+                                label="Jami xaridlar"
+                                value={stats.total}
+                                icon={ShoppingBag}
+                                color="#10b981"
+                                subtitle={`${stats.paidCount} ta to'langan`}
+                                isDark={isDark}
+                            />
+                            <StatCard
+                                label="Jami summa"
+                                value={stats.totalAmount}
+                                icon={DollarSign}
+                                color="#4f46e5"
+                                subtitle="So'm"
+                                isDark={isDark}
+                            />
+                        </ScrollView>
 
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                        <CalendarIcon size={12} color="#94a3b8" />
-                                        <Text style={[styles.details, { marginBottom: 0 }]}>
-                                            {entry.miqdor} • {entry.sana || 'Bugun'}
-                                        </Text>
-                                    </View>
-                                    <View style={[
-                                        styles.statusSmallBadge,
-                                        { backgroundColor: entry.holat === "to'langan" ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }
-                                    ]}>
-                                        <Text style={[
-                                            styles.statusSmallText,
-                                            { color: entry.holat === "to'langan" ? '#10b981' : '#ef4444' }
-                                        ]}>
-                                            {entry.holat === "to'langan" ? "To'langan" : "Qarz"}
-                                        </Text>
-                                    </View>
-                                </View>
+                        {/* Recent Purchases Section */}
+                        <View style={styles.sectionHeader}>
+                            <Text style={[styles.subHeader, { color: theme.labelColor, marginBottom: 0 }]}>
+                                Oxirgi xaridlar ({recentEntries.length})
+                            </Text>
+                            <TouchableOpacity onPress={() => marketName && fetchRecentEntries(marketName)}>
+                                <Text style={styles.refreshText}>Yangilash</Text>
                             </TouchableOpacity>
-                        ))
-                    )}
-                </View>
+                        </View>
+
+                        <View style={[styles.card, { backgroundColor: theme.cardBackground, borderColor: theme.borderColor, marginBottom: 40 }]}>
+                            {loading && recentEntries.length === 0 ? (
+                                <ActivityIndicator size="large" color="#4f46e5" style={{ padding: 40 }} />
+                            ) : recentEntries.length === 0 ? (
+                                <View style={{ padding: 40, alignItems: 'center' }}>
+                                    <ShoppingBag size={40} color={isDark ? '#334155' : '#e2e8f0'} style={{ marginBottom: 12 }} />
+                                    <Text style={{ color: theme.labelColor }}>Hozircha xaridlar yo'q</Text>
+                                </View>
+                            ) : (
+                                recentEntries.map(entry => (
+                                    <TouchableOpacity
+                                        key={entry.id}
+                                        style={[styles.confirmationItem, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderColor: theme.borderColor }]}
+                                        onPress={() => setSelectedEntry(entry)}
+                                    >
+                                        <View style={styles.itemRow}>
+                                            <View style={[styles.itemIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                                                <PackageIcon size={18} color="#10b981" />
+                                            </View>
+                                            <View style={styles.itemMain}>
+                                                <Text style={styles.labelSmall}>{formatDate(entry.created_at)}</Text>
+                                                <Text style={[styles.valueSmall, { color: theme.textColor }]}>{entry.mahsulot}</Text>
+                                            </View>
+                                            <View style={{ alignItems: 'flex-end' }}>
+                                                <Text style={styles.labelSmall}>Summa</Text>
+                                                <Text style={[styles.amount, { color: entry.holat === "to'langan" ? '#10b981' : '#ef4444' }]}>
+                                                    {new Intl.NumberFormat('uz-UZ').format(Number(entry.summa || '0'))} so'm
+                                                </Text>
+                                            </View>
+                                        </View>
+
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                                <CalendarIcon size={12} color="#94a3b8" />
+                                                <Text style={[styles.details, { marginBottom: 0 }]}>
+                                                    {entry.miqdor} • {entry.sana || 'Bugun'}
+                                                </Text>
+                                            </View>
+                                            <View style={[
+                                                styles.statusSmallBadge,
+                                                { backgroundColor: entry.holat === "to'langan" ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }
+                                            ]}>
+                                                <Text style={[
+                                                    styles.statusSmallText,
+                                                    { color: entry.holat === "to'langan" ? '#10b981' : '#ef4444' }
+                                                ]}>
+                                                    {entry.holat === "to'langan" ? "To'langan" : "Qarz"}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))
+                            )}
+                        </View>
+                    </>
+                ) : (
+                    <View style={{ paddingBottom: 100 }}>
+                        <Text style={[styles.subHeader, { color: theme.labelColor }]}>Barcha Haridlar va So'rovlar</Text>
+
+                        {allEntries.length === 0 && loading ? (
+                            <ActivityIndicator size="large" color="#4f46e5" style={{ marginTop: 40 }} />
+                        ) : (
+                            allEntries.map(entry => {
+                                const pendingUpdate = pendingRequests.find(req =>
+                                    req.entry_id === entry.id &&
+                                    req.request_type === 'UPDATE_STATUS' &&
+                                    req.status === 'pending'
+                                );
+                                const pendingDelete = pendingRequests.find(req =>
+                                    req.entry_id === entry.id &&
+                                    req.request_type === 'DELETE' &&
+                                    req.status === 'pending'
+                                );
+
+                                return (
+                                    <View key={entry.id} style={[styles.card, { backgroundColor: theme.cardBackground, borderColor: theme.borderColor, marginBottom: 16 }]}>
+                                        <View style={styles.itemRow}>
+                                            <View style={[styles.itemIconBox, { backgroundColor: 'rgba(79, 70, 229, 0.1)' }]}>
+                                                <UserIcon size={20} color="#4f46e5" />
+                                            </View>
+                                            <View style={styles.itemMain}>
+                                                <Text style={[styles.valueSmall, { color: theme.textColor }]}>{entry.seller_name}</Text>
+                                                <Text style={styles.labelSmall}>{entry.mahsulot} • {entry.miqdor}</Text>
+                                            </View>
+                                            <View style={{ alignItems: 'flex-end' }}>
+                                                <Text style={[styles.amount, { color: entry.holat === "to'langan" ? '#10b981' : '#ef4444' }]}>
+                                                    {new Intl.NumberFormat('uz-UZ').format(Number(entry.summa || '0'))}
+                                                </Text>
+                                                {entry.holat !== "to'langan" && (
+                                                    <View style={[
+                                                        styles.statusSmallBadge,
+                                                        { marginTop: 4, backgroundColor: 'rgba(239, 68, 68, 0.1)' }
+                                                    ]}>
+                                                        <Text style={[
+                                                            styles.statusSmallText,
+                                                            { color: '#ef4444' }
+                                                        ]}>
+                                                            Qarz
+                                                        </Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </View>
+
+                                        <View style={{ height: 1, backgroundColor: theme.borderColor, marginVertical: 12 }} />
+
+                                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                                            <TouchableOpacity
+                                                style={[styles.actionBtn, { backgroundColor: 'rgba(79, 70, 229, 0.1)' }, pendingUpdate && { opacity: 0.5 }]}
+                                                disabled={!!pendingUpdate}
+                                                onPress={() => {
+                                                    const newStatus = entry.holat === "to'langan" ? "to'lanmagan" : "to'langan";
+                                                    Alert.alert(
+                                                        "Holatni o'zgartirish",
+                                                        `"${newStatus === "to'langan" ? "To'langan" : "Qarz"}" holatiga o'tkazish so'rovini yuborasizmi?`,
+                                                        [
+                                                            { text: "Bekor qilish", style: "cancel" },
+                                                            { text: "Yuborish", onPress: () => requestChange(entry.id, 'UPDATE_STATUS', newStatus) }
+                                                        ]
+                                                    );
+                                                }}
+                                            >
+                                                <Text style={[styles.actionBtnText, { color: '#4f46e5', fontSize: 12 }]}>
+                                                    {pendingUpdate ? "Kutilmoqda..." : entry.holat === "to'langan" ? "Qarzga o'tkazish" : "To'langanga o'tkazish"}
+                                                </Text>
+                                            </TouchableOpacity>
+
+                                            <TouchableOpacity
+                                                style={[styles.actionBtn, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }, pendingDelete && { opacity: 0.5 }]}
+                                                disabled={!!pendingDelete}
+                                                onPress={() => {
+                                                    Alert.alert(
+                                                        "O'chirish",
+                                                        "Ushbu yozuvni o'chirish so'rovini yuborasizmi?",
+                                                        [
+                                                            { text: "Bekor qilish", style: "cancel" },
+                                                            { text: "Yuborish", style: 'destructive', onPress: () => requestChange(entry.id, 'DELETE') }
+                                                        ]
+                                                    );
+                                                }}
+                                            >
+                                                <Text style={[styles.actionBtnText, { color: '#ef4444', fontSize: 12 }]}>
+                                                    {pendingDelete ? "Kutilmoqda..." : "O'chirish"}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                );
+                            })
+                        )}
+                    </View>
+                )}
             </ScrollView>
             <DetailsModal />
         </SafeAreaView >
@@ -639,6 +797,36 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 8,
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        marginBottom: 24,
+        backgroundColor: '#e2e8f0',
+        borderRadius: 16,
+        padding: 4,
+    },
+    tabBtn: {
+        flex: 1,
+        paddingVertical: 10,
+        alignItems: 'center',
+        borderRadius: 12,
+    },
+    activeTabBtn: {
+        backgroundColor: '#ffffff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    tabText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#64748b',
+    },
+    activeTabText: {
+        color: '#4f46e5',
+        fontWeight: '700',
     },
     statIconContainer: {
         width: 36,

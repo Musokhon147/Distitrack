@@ -17,7 +17,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEntryContext } from '../context/EntryContext';
 import * as FileSystem from 'expo-file-system';
-import { Paths, File } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import {
     History as HistoryIcon,
@@ -102,15 +101,29 @@ export const RecordsScreen = () => {
                 `${e.marketNomi},${e.mahsulotTuri},${e.miqdori},${e.narx},${e.tolovHolati},${e.sana}`
             ).join('\n');
 
-            const file = new File(Paths.document, 'hisobot.csv');
-            if (file.exists) {
-                file.delete();
+            const csvContent = header + rows;
+            // Use casting to avoid TS errors if types are missing
+            const fileDir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
+            if (!fileDir) {
+                Alert.alert('Xatolik', 'Fayl tizimi mavjud emas');
+                return;
             }
-            file.create();
-            file.write(header + rows, { encoding: 'utf8' });
-            await Sharing.shareAsync(file.uri);
+            const fileUri = `${fileDir}hisobot.csv`;
+
+            await (FileSystem as any).writeAsStringAsync(fileUri, csvContent, { encoding: 'utf8' });
+
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(fileUri, {
+                    mimeType: 'text/csv',
+                    UTI: 'public.comma-separated-values-text',
+                    dialogTitle: 'Hisobotni ulashish'
+                });
+            } else {
+                Alert.alert('Xatolik', 'Ulashish imkoniyati mavjud emas');
+            }
         } catch (error) {
-            Alert.alert('Xatolik', 'Eksport qilishda xatolik yuz berdi');
+            console.error(error);
+            Alert.alert('Xatolik', 'Eksport qilishda xatolik yuz berdi: ' + (error as any).message);
         }
     };
 
@@ -129,6 +142,9 @@ export const RecordsScreen = () => {
             req.request_type === 'UPDATE_STATUS' &&
             req.status === 'pending'
         );
+
+        const isPaid = item.tolovHolati === "to'langan";
+        const isEditDisabled = !!pendingUpdate || isPaid;
 
         return (
             <View style={styles.card}>
@@ -183,12 +199,16 @@ export const RecordsScreen = () => {
                 </View>
 
                 <View style={styles.cardFooter}>
-                    {item.tolovHolati === "to'lanmagan" && (
-                        <TouchableOpacity onPress={() => handleEditStart(item)} style={styles.actionBtn}>
-                            <Edit3 size={normalize(18)} color="#4f46e5" />
-                            <Text style={[styles.actionText, { color: '#4f46e5' }]}>Tahrirlash</Text>
-                        </TouchableOpacity>
-                    )}
+                    <TouchableOpacity
+                        onPress={() => handleEditStart(item)}
+                        style={[styles.actionBtn, isEditDisabled && { opacity: 0.5 }]}
+                        disabled={isEditDisabled}
+                    >
+                        <Edit3 size={normalize(18)} color={isEditDisabled ? "#94a3b8" : "#4f46e5"} />
+                        <Text style={[styles.actionText, { color: isEditDisabled ? "#94a3b8" : "#4f46e5" }]}>
+                            {pendingUpdate ? "Kutilmoqda..." : "Tahrirlash"}
+                        </Text>
+                    </TouchableOpacity>
 
                     {pendingDelete ? (
                         <View style={[styles.actionBtn, { opacity: 0.7 }]}>
@@ -196,9 +216,13 @@ export const RecordsScreen = () => {
                             <Text style={[styles.actionText, { color: '#f59e0b' }]}>Kutilmoqda...</Text>
                         </View>
                     ) : (
-                        <TouchableOpacity onPress={() => handleDelete(item.id, item.marketNomi)} style={styles.actionBtn}>
-                            <Trash2 size={normalize(18)} color="#ef4444" />
-                            <Text style={[styles.actionText, { color: '#ef4444' }]}>O'chirish</Text>
+                        <TouchableOpacity
+                            onPress={() => handleDelete(item.id, item.marketNomi)}
+                            style={[styles.actionBtn, pendingUpdate && { opacity: 0.5 }]} // Also disable delete if update is pending to avoid conflict
+                            disabled={!!pendingUpdate}
+                        >
+                            <Trash2 size={normalize(18)} color={pendingUpdate ? "#94a3b8" : "#ef4444"} />
+                            <Text style={[styles.actionText, { color: pendingUpdate ? "#94a3b8" : "#ef4444" }]}>O'chirish</Text>
                         </TouchableOpacity>
                     )}
                 </View>

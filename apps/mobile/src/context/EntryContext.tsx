@@ -27,6 +27,7 @@ interface EntryContextType {
     refreshEntries: () => Promise<void>;
     approveRequest: (requestId: string) => Promise<void>;
     rejectRequest: (requestId: string) => Promise<void>;
+    requestChange: (entryId: string, type: 'DELETE' | 'UPDATE_STATUS', newStatus?: string) => Promise<void>;
 }
 
 const EntryContext = createContext<EntryContextType | undefined>(undefined);
@@ -328,7 +329,8 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             deleteEntry,
             refreshEntries,
             approveRequest,
-            rejectRequest
+            rejectRequest,
+            requestChange
         }}>
             {children}
         </EntryContext.Provider>

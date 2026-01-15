@@ -117,11 +117,16 @@ export const RecordsScreen = () => {
 
     const renderEntry = ({ item }: { item: Entry }) => {
         // Check if there is a pending DELETE request for this entry
-        // We look for a request where this user is the requester (usually) or just any pending request for this entry
-        // Since we are the Creator/Seller, we want to know if *we* have requested a delete that is pending.
         const pendingDelete = pendingRequests.find(req =>
             req.entry_id === item.id &&
             req.request_type === 'DELETE' &&
+            req.status === 'pending'
+        );
+
+        // Check for pending STATUS UPDATE
+        const pendingUpdate = pendingRequests.find(req =>
+            req.entry_id === item.id &&
+            req.request_type === 'UPDATE_STATUS' &&
             req.status === 'pending'
         );
 
@@ -141,9 +146,21 @@ export const RecordsScreen = () => {
                             </View>
                         </View>
                     </View>
-                    <View style={[styles.statusBadge, { backgroundColor: item.tolovHolati === "to'langan" ? '#f0fdf4' : '#fef2f2' }]}>
-                        <Text style={[styles.statusText, { color: item.tolovHolati === "to'langan" ? '#10b981' : '#ef4444' }]}>
-                            {item.tolovHolati}
+
+                    {/* Status Badge with Waiting Logic */}
+                    <View style={[
+                        styles.statusBadge,
+                        pendingUpdate
+                            ? { backgroundColor: '#fef3c7' } // Yellow for waiting
+                            : { backgroundColor: item.tolovHolati === "to'langan" ? '#f0fdf4' : '#fef2f2' }
+                    ]}>
+                        <Text style={[
+                            styles.statusText,
+                            pendingUpdate
+                                ? { color: '#d97706' }
+                                : { color: item.tolovHolati === "to'langan" ? '#10b981' : '#ef4444' }
+                        ]}>
+                            {pendingUpdate ? "Kutilmoqda..." : item.tolovHolati}
                         </Text>
                     </View>
                 </View>

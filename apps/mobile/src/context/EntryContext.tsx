@@ -10,6 +10,11 @@ interface ChangeRequest {
     request_type: 'DELETE' | 'UPDATE_STATUS';
     new_status?: string;
     status: 'pending' | 'approved' | 'rejected';
+    created_at: string;
+    entry: Entry;
+    market_id: string;
+    requested_by: string;
+    request_side: string;
 }
 
 interface EntryContextType {
@@ -77,13 +82,35 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const fetchPendingRequests = async () => {
         const { data, error } = await supabase
             .from('change_requests')
-            .select('*')
+            .select('*, entry:entries(*)')
             .eq('status', 'pending');
 
         if (error) {
             console.error('Error fetching requests:', error);
         } else if (data) {
-            setPendingRequests(data as ChangeRequest[]);
+            // Map the nested entry structure to match the Entry interface if needed
+            // But usually 'entry:entries(*)' returns the object. 
+            // We might need to map the entry fields if they differ from the Entry type expected by the app (snake_case vs camelCase)
+
+            // Let's verify the data structure. The app uses mapped camelCase entries in fetchEntries.
+            // We should probably map the nested entry here too to be consistent.
+
+            const requests = data.map((req: any) => ({
+                ...req,
+                entry: req.entry ? {
+                    id: req.entry.id,
+                    marketNomi: req.entry.client,
+                    marketRaqami: req.entry.izoh || '',
+                    mahsulotTuri: req.entry.mahsulot,
+                    miqdori: req.entry.miqdor,
+                    narx: req.entry.narx,
+                    tolovHolati: req.entry.holat as any,
+                    sana: req.entry.sana,
+                    summa: typeof req.entry.summa === 'number' ? req.entry.summa : parseFloat(req.entry.summa) || 0,
+                } : null
+            })).filter((r: any) => r.entry !== null); // Filter out requests where entry might be null (deleted?)
+
+            setPendingRequests(requests as ChangeRequest[]);
         }
     };
 

@@ -47,7 +47,7 @@ const Download = DownloadIcon as any;
 
 export const RecordsScreen = () => {
     const { width } = useWindowDimensions();
-    const { entries, deleteEntry, updateEntry, loading } = useEntryContext();
+    const { entries, deleteEntry, updateEntry, loading, pendingRequests } = useEntryContext();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('Barchasi');
     const [isFilterVisible, setIsFilterVisible] = useState(false);
@@ -114,59 +114,80 @@ export const RecordsScreen = () => {
         }
     };
 
-    const renderEntry = ({ item }: { item: Entry }) => (
-        <View style={styles.card}>
-            <View style={styles.cardHeader}>
-                <View style={styles.marketInfo}>
-                    <View style={styles.marketIconBox}>
-                        <Package size={normalize(20)} color="#4f46e5" />
+
+    const renderEntry = ({ item }: { item: Entry }) => {
+        // Check if there is a pending DELETE request for this entry
+        // We look for a request where this user is the requester (usually) or just any pending request for this entry
+        // Since we are the Creator/Seller, we want to know if *we* have requested a delete that is pending.
+        const pendingDelete = pendingRequests.find(req =>
+            req.entry_id === item.id &&
+            req.request_type === 'DELETE' &&
+            req.status === 'pending'
+        );
+
+        return (
+            <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                    {/* ... existing header ... */}
+                    <View style={styles.marketInfo}>
+                        <View style={styles.marketIconBox}>
+                            <Package size={normalize(20)} color="#4f46e5" />
+                        </View>
+                        <View>
+                            <Text style={styles.marketName}>{item.marketNomi}</Text>
+                            <View style={styles.dateRow}>
+                                <Calendar size={normalize(12)} color="#94a3b8" />
+                                <Text style={styles.dateText}>{item.sana}</Text>
+                            </View>
+                        </View>
                     </View>
-                    <View>
-                        <Text style={styles.marketName}>{item.marketNomi}</Text>
-                        <View style={styles.dateRow}>
-                            <Calendar size={normalize(12)} color="#94a3b8" />
-                            <Text style={styles.dateText}>{item.sana}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: item.tolovHolati === "to'langan" ? '#f0fdf4' : '#fef2f2' }]}>
+                        <Text style={[styles.statusText, { color: item.tolovHolati === "to'langan" ? '#10b981' : '#ef4444' }]}>
+                            {item.tolovHolati}
+                        </Text>
+                    </View>
+                </View>
+
+                <View style={styles.cardContent}>
+                    <View style={styles.detailRow}>
+                        <View style={styles.detailItem}>
+                            <Text style={styles.detailLabel}>Mahsulot</Text>
+                            <Text style={styles.detailValue}>{item.mahsulotTuri}</Text>
+                        </View>
+                        <View style={styles.detailItem}>
+                            <Text style={styles.detailLabel}>Miqdor</Text>
+                            <Text style={styles.detailValue}>{item.miqdori}</Text>
+                        </View>
+                        <View style={styles.detailItem}>
+                            <Text style={styles.detailLabel}>Narx</Text>
+                            <Text style={styles.priceValue}>{new Intl.NumberFormat('uz-UZ').format(item.summa || 0)}</Text>
                         </View>
                     </View>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: item.tolovHolati === "to'langan" ? '#f0fdf4' : '#fef2f2' }]}>
-                    <Text style={[styles.statusText, { color: item.tolovHolati === "to'langan" ? '#10b981' : '#ef4444' }]}>
-                        {item.tolovHolati}
-                    </Text>
+
+                <View style={styles.cardFooter}>
+                    {item.tolovHolati === "to'lanmagan" && (
+                        <TouchableOpacity onPress={() => handleEditStart(item)} style={styles.actionBtn}>
+                            <Edit3 size={normalize(18)} color="#4f46e5" />
+                            <Text style={[styles.actionText, { color: '#4f46e5' }]}>Tahrirlash</Text>
+                        </TouchableOpacity>
+                    )}
+
+                    {pendingDelete ? (
+                        <View style={[styles.actionBtn, { opacity: 0.7 }]}>
+                            <HistoryIcon size={normalize(18)} color="#f59e0b" />
+                            <Text style={[styles.actionText, { color: '#f59e0b' }]}>Kutilmoqda...</Text>
+                        </View>
+                    ) : (
+                        <TouchableOpacity onPress={() => handleDelete(item.id, item.marketNomi)} style={styles.actionBtn}>
+                            <Trash2 size={normalize(18)} color="#ef4444" />
+                            <Text style={[styles.actionText, { color: '#ef4444' }]}>O'chirish</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             </View>
-
-            <View style={styles.cardContent}>
-                <View style={styles.detailRow}>
-                    <View style={styles.detailItem}>
-                        <Text style={styles.detailLabel}>Mahsulot</Text>
-                        <Text style={styles.detailValue}>{item.mahsulotTuri}</Text>
-                    </View>
-                    <View style={styles.detailItem}>
-                        <Text style={styles.detailLabel}>Miqdor</Text>
-                        <Text style={styles.detailValue}>{item.miqdori}</Text>
-                    </View>
-                    <View style={styles.detailItem}>
-                        <Text style={styles.detailLabel}>Narx</Text>
-                        <Text style={styles.priceValue}>{new Intl.NumberFormat('uz-UZ').format(item.summa || 0)}</Text>
-                    </View>
-                </View>
-            </View>
-
-            <View style={styles.cardFooter}>
-                {item.tolovHolati === "to'lanmagan" && (
-                    <TouchableOpacity onPress={() => handleEditStart(item)} style={styles.actionBtn}>
-                        <Edit3 size={normalize(18)} color="#4f46e5" />
-                        <Text style={[styles.actionText, { color: '#4f46e5' }]}>Tahrirlash</Text>
-                    </TouchableOpacity>
-                )}
-                <TouchableOpacity onPress={() => handleDelete(item.id, item.marketNomi)} style={styles.actionBtn}>
-                    <Trash2 size={normalize(18)} color="#ef4444" />
-                    <Text style={[styles.actionText, { color: '#ef4444' }]}>O'chirish</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container}>

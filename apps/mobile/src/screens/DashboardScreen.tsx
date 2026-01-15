@@ -12,6 +12,7 @@ import {
     KeyboardAvoidingView,
     Platform
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEntryContext } from '../context/EntryContext';
 import { useAuth } from '../context/AuthContext';
@@ -30,7 +31,8 @@ import {
     User,
     Search,
     ChevronDown,
-    X
+    X,
+    Bell
 } from 'lucide-react-native';
 import { Modal, FlatList } from 'react-native';
 // Reanimated disabled for stability
@@ -52,9 +54,10 @@ const { width, height } = Dimensions.get('window');
 // const AnimatedGradient = Animated.createAnimatedComponent(LinearGradient);
 
 export default function DashboardScreen() {
+    const navigation = useNavigation<any>();
     const { markets } = useMarkets();
     const { products } = useProducts();
-    const { addEntry, loading: contextLoading } = useEntryContext();
+    const { addEntry, loading: contextLoading, pendingRequests } = useEntryContext();
 
     const [form, setForm] = useState({
         marketNomi: '',
@@ -187,14 +190,35 @@ export default function DashboardScreen() {
                                     <Text style={styles.statusText}>Tizim Onlayn</Text>
                                 </View>
                             </View>
-                            <TouchableOpacity style={styles.profileBtn}>
-                                <LinearGradient
-                                    colors={['#4f46e5', '#3730a3']}
-                                    style={styles.profileGradient}
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                <TouchableOpacity
+                                    style={{ position: 'relative', padding: 4 }}
+                                    onPress={() => navigation.navigate('Notifications')}
                                 >
-                                    <User size={20} color="#fff" />
-                                </LinearGradient>
-                            </TouchableOpacity>
+                                    <Bell size={24} color="#1e293b" />
+                                    {pendingRequests.length > 0 && (
+                                        <View style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            right: 0,
+                                            width: 10,
+                                            height: 10,
+                                            borderRadius: 5,
+                                            backgroundColor: '#ef4444',
+                                            borderWidth: 1,
+                                            borderColor: '#fff'
+                                        }} />
+                                    )}
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.profileBtn}>
+                                    <LinearGradient
+                                        colors={['#4f46e5', '#3730a3']}
+                                        style={styles.profileGradient}
+                                    >
+                                        <User size={20} color="#fff" />
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            </View>
                         </View>
 
                         {/* Glass Form Card */}

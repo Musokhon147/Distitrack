@@ -4,66 +4,170 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { Alert } from 'react-native';
 
+interface ChangeRequest {
+    id: string;
+    entry_id: string;
+    request_type: 'DELETE' | 'UPDATE_STATUS';
+    new_status?: string;
+    status: 'pending' | 'approved' | 'rejected';
+}
+
 interface EntryContextType {
     entries: Entry[];
     loading: boolean;
+    pendingRequests: ChangeRequest[];
     addEntry: (entry: Omit<Entry, 'id' | 'sana'>) => Promise<void>;
     updateEntry: (id: string, updatedEntry: Partial<Entry>) => Promise<void>;
     deleteEntry: (id: string) => Promise<void>;
     refreshEntries: () => Promise<void>;
+    approveRequest: (requestId: string) => Promise<void>;
+    rejectRequest: (requestId: string) => Promise<void>;
 }
 
 const EntryContext = createContext<EntryContextType | undefined>(undefined);
 
 export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [entries, setEntries] = useState<Entry[]>([]);
+    const [pendingRequests, setPendingRequests] = useState<ChangeRequest[]>([]);
     const [loading, setLoading] = useState(false);
     const { user } = useAuth();
 
     useEffect(() => {
         if (user) {
-            fetchEntries();
+            refreshEntries();
         } else {
             setEntries([]);
+            setPendingRequests([]);
         }
     }, [user]);
 
-    const fetchEntries = async () => {
+    const refreshEntries = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('entries')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                console.error('Error fetching entries:', error);
-            } else if (data) {
-                const mappedEntries: Entry[] = data.map((row: any) => ({
-                    id: row.id,
-                    marketNomi: row.client,
-                    marketRaqami: row.izoh || '',
-                    mahsulotTuri: row.mahsulot,
-                    miqdori: row.miqdor,
-                    narx: row.narx,
-                    tolovHolati: row.holat as any,
-                    sana: row.sana,
-                    summa: typeof row.summa === 'number' ? row.summa : parseFloat(row.summa) || 0,
-                }));
-                setEntries(mappedEntries);
-            }
+            await Promise.all([fetchEntries(), fetchPendingRequests()]);
         } finally {
             setLoading(false);
         }
     };
 
+    const fetchEntries = async () => {
+        const { data, error } = await supabase
+            .from('entries')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching entries:', error);
+        } else if (data) {
+            const mappedEntries: Entry[] = data.map((row: any) => ({
+                id: row.id,
+                marketNomi: row.client,
+                marketRaqami: row.izoh || '',
+                mahsulotTuri: row.mahsulot,
+                miqdori: row.miqdor,
+                narx: row.narx,
+                tolovHolati: row.holat as any,
+                sana: row.sana,
+                summa: typeof row.summa === 'number' ? row.summa : parseFloat(row.summa) || 0,
+            }));
+            setEntries(mappedEntries);
+        }
+    };
+
+    const fetchPendingRequests = async () => {
+        const { data, error } = await supabase
+            .from('change_requests')
+            .select('*')
+            .eq('status', 'pending');
+
+        if (error) {
+            console.error('Error fetching requests:', error);
+        } else if (data) {
+            setPendingRequests(data as ChangeRequest[]);
+        }
+    };
+
+    const getProfileInfo = async () => {
+        if (!user) throw new Error('User not logged in');
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('role, market_id')
+            .eq('id', user.id)
+            .single();
+        if (error || !data) throw new Error('Could not fetch profile info');
+        return data;
+    };
+
+    const requestChange = async (
+        entryId: string,
+        type: 'DELETE' | 'UPDATE_STATUS',
+        newStatus?: string
+    ) => {
+        try {
+            const profile = await getProfileInfo();
+            const role = profile.role;
+            let marketId = profile.market_id;
+
+            // If Seller, we need to find the market_id for this entry
+            if (role === 'seller') {
+                const { data: entryData, error: entryError } = await supabase
+                    .from('entries')
+                    .select('client, market_id')
+                    .eq('id', entryId)
+                    .single();
+
+                if (entryError || !entryData) throw new Error('Entry not found');
+
+                marketId = entryData.market_id;
+
+                // Fallback: try to find market by name if market_id is null on entry
+                if (!marketId) {
+                    const { data: marketData } = await supabase
+                        .from('markets')
+                        .select('id')
+                        .eq('name', entryData.client)
+                        .single();
+                    if (marketData) marketId = marketData.id;
+                }
+            }
+
+            if (!marketId) throw new Error('Market information missing for this entry');
+
+            // Insert Request
+            const { error } = await supabase
+                .from('change_requests')
+                .insert([{
+                    entry_id: entryId,
+                    market_id: marketId,
+                    requested_by: user!.id,
+                    request_side: role, // 'seller' or 'market'
+                    request_type: type,
+                    new_status: newStatus,
+                    status: 'pending'
+                }]);
+
+            if (error) throw error;
+
+            Alert.alert(
+                'So\'rov yuborildi',
+                type === 'DELETE'
+                    ? 'O\'chirish so\'rovi yuborildi. Tasdiqlash kutilmoqda.'
+                    : 'Holat o\'zgartirish so\'rovi yuborildi. Tasdiqlash kutilmoqda.'
+            );
+
+            await fetchPendingRequests();
+
+        } catch (error: any) {
+            console.error('Request change error:', error);
+            Alert.alert('Xatolik', error.message || 'So\'rov yuborishda xatolik');
+        }
+    };
+
     const addEntry = async (entry: Omit<Entry, 'id' | 'sana'>) => {
         if (!user) return;
-
         setLoading(true);
         try {
             const summa = entry.narx.replace(/[^\d.]/g, '') || '0';
-
             const dbEntry = {
                 user_id: user.id,
                 client: entry.marketNomi,
@@ -86,18 +190,7 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 console.error('Error adding entry:', error);
                 Alert.alert('Xatolik', `Saqlashda xatolik: ${error.message}`);
             } else if (data) {
-                const newEntry: Entry = {
-                    id: data.id,
-                    marketNomi: data.client,
-                    marketRaqami: data.izoh || '',
-                    mahsulotTuri: data.mahsulot,
-                    miqdori: data.miqdor,
-                    narx: data.narx,
-                    tolovHolati: data.holat as any,
-                    sana: data.sana,
-                    summa: typeof data.summa === 'number' ? data.summa : parseFloat(data.summa) || 0,
-                };
-                setEntries([newEntry, ...entries]);
+                await fetchEntries();
             }
         } finally {
             setLoading(false);
@@ -107,133 +200,38 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const updateEntry = async (id: string, updatedEntry: Partial<Entry>) => {
         if (!user) return;
 
-        const currentEntry = entries.find(e => e.id === id);
-        if (currentEntry?.tolovHolati === "kutilmoqda") {
-            Alert.alert('Ogohlantirish', "Tasdiqlash kutilayotgan yozuvni o'zgartirib bo'lmaydi");
-            return;
-        }
+        // Check for specific sensitive changes that require approval
+        // 1. Payment Status Change
+        if (updatedEntry.tolovHolati) {
+            const currentEntry = entries.find(e => e.id === id);
+            // If status is actually changing
+            if (currentEntry && currentEntry.tolovHolati !== updatedEntry.tolovHolati) {
+                // Check if it's a sensitive change (Any change to Paid, or Unpaid, usually requires check)
+                // User requirement: "markets can change unpaid to paid... send confirmation"
+                // And "seller... delete... send notification"
+                // Let's protect ALL status changes via workflow for consistency, or just the ones requested.
+                // "market... change unpaid to paid... send confirmation to seller"
 
-        // Check if payment status is being changed to 'to'langan'
-        const isChangingToPaid = updatedEntry.tolovHolati === "to'langan";
-
-        if (isChangingToPaid) {
-            // Get the current entry state
-            if (!currentEntry) {
-                Alert.alert('Xatolik', 'Yozuv topilmadi');
-                return;
-            }
-
-            // Only proceed if not already paid
-            if (currentEntry.tolovHolati === "to'langan") {
-                Alert.alert('Ogohlantirish', "To'langan yozuvni o'zgartirib bo'lmaydi");
-                return;
-            }
-
-            try {
-                // 1. Get market_id from entries table
-                const { data: entryData, error: entryError } = await supabase
-                    .from('entries')
-                    .select('client, holat, market_id')
-                    .eq('id', id)
-                    .single();
-
-                if (entryError || !entryData) {
-                    throw new Error('Yozuv ma\'lumotlarini olishda xatolik');
-                }
-
-                let marketId = entryData.market_id;
-
-                // 2. Lookup market_id by name if missing
-                if (!marketId) {
-                    const { data: marketData, error: marketError } = await supabase
-                        .from('markets')
-                        .select('id')
-                        .eq('name', entryData.client)
-                        .single();
-
-                    if (!marketError && marketData) {
-                        marketId = marketData.id;
-                    }
-                }
-
-                if (!marketId) {
-                    throw new Error('Market ma\'lumotlarini topishda xatolik. Iltimos, market nomini tekshiring.');
-                }
-
-                // 3. Create payment confirmation request
-                const { error: confirmationError } = await supabase
-                    .from('payment_confirmations')
-                    .insert([{
-                        entry_id: id,
-                        requested_by: user.id,
-                        market_id: marketId,
-                        requested_status: "to'langan",
-                        current_status: entryData.holat || currentEntry.tolovHolati,
-                        status: 'pending'
-                    }]);
-
-                if (confirmationError) {
-                    // Fallback if table doesn't exist or other DB error
-                    console.warn('Confirmation error, falling back to direct update:', confirmationError);
-                    const { error: directError } = await supabase
-                        .from('entries')
-                        .update({ holat: "to'langan" })
-                        .eq('id', id);
-
-                    if (directError) throw directError;
-
-                    setEntries(entries.map(e => e.id === id ? { ...e, tolovHolati: "to'langan" } : e));
-                    Alert.alert('Muvaffaqiyat', 'To\'lov holati yangilandi');
-                    return;
-                }
-
-                // 4. Update entry status to "kutilmoqda"
-                const { error: statusUpdateError } = await supabase
-                    .from('entries')
-                    .update({ holat: 'kutilmoqda' })
-                    .eq('id', id);
-
-                if (statusUpdateError) console.error('Error updating status to waiting:', statusUpdateError);
-
-                // 5. Apply other field updates if any
-                const dbUpdate: any = {};
-                if (updatedEntry.marketNomi !== undefined) dbUpdate.client = updatedEntry.marketNomi;
-                if (updatedEntry.mahsulotTuri !== undefined) dbUpdate.mahsulot = updatedEntry.mahsulotTuri;
-                if (updatedEntry.miqdori !== undefined) dbUpdate.miqdor = updatedEntry.miqdori;
-                if (updatedEntry.narx !== undefined) {
-                    dbUpdate.narx = updatedEntry.narx;
-                    dbUpdate.summa = updatedEntry.narx.replace(/[^\d.]/g, '') || '0';
-                }
-
-                if (Object.keys(dbUpdate).length > 0) {
-                    await supabase.from('entries').update(dbUpdate).eq('id', id);
-                }
-
-                setEntries(entries.map(e => e.id === id ? { ...e, ...updatedEntry, tolovHolati: 'kutilmoqda' } : e));
-                Alert.alert('So\'rov yuborildi', 'To\'lov tasdiqlov kutilmoqda');
-                return;
-            } catch (error: any) {
-                Alert.alert('Xatolik', error.message || 'Kutilmagan xatolik yuz berdi');
-                return;
+                // Let's default to Request for ANY status change to keep it safe and consistent bidirectional
+                await requestChange(id, 'UPDATE_STATUS', updatedEntry.tolovHolati);
+                return; // Stop here, don't do direct update
             }
         }
 
-        // Standard update for other fields or if already paid
-        if (currentEntry?.tolovHolati === "to'langan") {
-            Alert.alert('Ogohlantirish', "To'langan yozuvni tahrirlash mumkin emas");
-            return;
-        }
+        // Standard update for non-sensitive fields (like notes, or editing typos if allowed)
+        // Note: Adding a check to prevent editing other fields if "Paid" is usually good practice, but keeping simple for now.
 
         const dbUpdate: any = {};
         if (updatedEntry.marketNomi !== undefined) dbUpdate.client = updatedEntry.marketNomi;
         if (updatedEntry.mahsulotTuri !== undefined) dbUpdate.mahsulot = updatedEntry.mahsulotTuri;
         if (updatedEntry.miqdori !== undefined) dbUpdate.miqdor = updatedEntry.miqdori;
-        if (updatedEntry.tolovHolati !== undefined) dbUpdate.holat = updatedEntry.tolovHolati;
         if (updatedEntry.marketRaqami !== undefined) dbUpdate.izoh = updatedEntry.marketRaqami;
         if (updatedEntry.narx !== undefined) {
             dbUpdate.narx = updatedEntry.narx;
             dbUpdate.summa = updatedEntry.narx.replace(/[^\d.]/g, '') || '0';
         }
+
+        if (Object.keys(dbUpdate).length === 0) return;
 
         const { error } = await supabase
             .from('entries')
@@ -241,33 +239,70 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             .eq('id', id);
 
         if (error) {
-            console.error('Error updating entry:', error);
             Alert.alert('Xatolik', `Yangilashda xatolik: ${error.message}`);
         } else {
-            const finalUpdate = { ...updatedEntry };
-            if (updatedEntry.narx) {
-                (finalUpdate as any).summa = parseFloat(updatedEntry.narx.replace(/[^\d.]/g, '')) || 0;
-            }
-            setEntries(entries.map(e => e.id === id ? { ...e, ...finalUpdate } : e));
+            await fetchEntries();
         }
     };
 
     const deleteEntry = async (id: string) => {
-        const { error } = await supabase
-            .from('entries')
-            .delete()
-            .eq('id', id);
+        // Instead of immediate delete, we request deletion
+        Alert.alert(
+            "O'chirishni so'rash",
+            "Bu yozuvni o'chirish uchun tasdiq so'rovi yuborilsinmi?",
+            [
+                { text: "Bekor qilish", style: "cancel" },
+                {
+                    text: "So'rov yuborish",
+                    style: 'destructive',
+                    onPress: async () => {
+                        await requestChange(id, 'DELETE');
+                    }
+                }
+            ]
+        );
+    };
 
-        if (error) {
-            console.error('Error deleting entry:', error);
-            Alert.alert('Xatolik', 'O\'chirishda xatolik yuz berdi');
-        } else {
-            setEntries(entries.filter(e => e.id !== id));
+    const approveRequest = async (requestId: string) => {
+        try {
+            const { error } = await supabase.rpc('approve_change_request', { request_id: requestId });
+            if (error) throw error;
+
+            Alert.alert('Muvaffaqiyat', 'So\'rov tasdiqlandi');
+            await refreshEntries();
+        } catch (error: any) {
+            Alert.alert('Xatolik', error.message || 'Tasdiqlashda xatolik');
+        }
+    };
+
+    const rejectRequest = async (requestId: string) => {
+        try {
+            const { error } = await supabase
+                .from('change_requests')
+                .update({ status: 'rejected', reviewed_by: user?.id })
+                .eq('id', requestId);
+
+            if (error) throw error;
+
+            Alert.alert('Muvaffaqiyat', 'So\'rov rad etildi');
+            await refreshEntries();
+        } catch (error: any) {
+            Alert.alert('Xatolik', error.message || 'Rad etishda xatolik');
         }
     };
 
     return (
-        <EntryContext.Provider value={{ entries, loading, addEntry, updateEntry, deleteEntry, refreshEntries: fetchEntries }}>
+        <EntryContext.Provider value={{
+            entries,
+            loading,
+            pendingRequests,
+            addEntry,
+            updateEntry,
+            deleteEntry,
+            refreshEntries,
+            approveRequest,
+            rejectRequest
+        }}>
             {children}
         </EntryContext.Provider>
     );

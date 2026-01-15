@@ -27,6 +27,7 @@ import {
   Settings
 } from 'lucide-react-native';
 import { ReportsScreen } from './src/screens/ReportsScreen';
+import { NotificationsScreen } from './src/screens/NotificationsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -158,6 +159,7 @@ function AppNavigator() {
               <Stack.Screen name="Products" component={ProductsScreen} />
             </>
           )}
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
         </>
       ) : (
         <>

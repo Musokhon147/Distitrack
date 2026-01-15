@@ -25,28 +25,12 @@ import {
     CheckCircle2,
     XCircle,
     Clock,
-    LogOut
+    LogOut,
+    Bell
 } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useEntryContext } from '../context/EntryContext';
 
-interface PaymentConfirmation {
-    id: string;
-    entry_id: string;
-    requested_by: string;
-    market_id: string;
-    status: string;
-    requested_status: string;
-    current_status: string;
-    created_at: string;
-    entry: {
-        mahsulot: string;
-        miqdor: string;
-        narx: string;
-        summa: string;
-    } | null;
-    seller: {
-        full_name: string;
-    } | null;
-}
 
 const StatCard = ({ label, value, icon: Icon, color, subtitle, isDark }: any) => (
     <View style={[styles.statCard, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderColor: isDark ? '#334155' : '#e2e8f0' }]}>
@@ -66,10 +50,10 @@ export default function MarketDashboardScreen() {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
     const { user, signOut } = useAuth();
-    const [confirmations, setConfirmations] = useState<PaymentConfirmation[]>([]);
+    const navigation = useNavigation<any>();
+    const { pendingRequests } = useEntryContext();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [processingId, setProcessingId] = useState<string | null>(null);
     const [marketId, setMarketId] = useState<string | null>(null);
     const [marketName, setMarketName] = useState<string | null>(null);
     const [recentEntries, setRecentEntries] = useState<any[]>([]);
@@ -105,29 +89,37 @@ export default function MarketDashboardScreen() {
     };
 
     useEffect(() => {
-        fetchMarketId();
+        if (user) {
+            fetchMarketInfo();
+        }
     }, [user]);
 
-    const fetchMarketId = async () => {
-        if (!user) return;
-        // Get market_id and market_name from profile or join
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('market_id, markets:market_id(name)')
-            .eq('id', user.id)
-            .single();
+    const fetchMarketInfo = async () => {
+        setLoading(true);
+        try {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('market_id')
+                .eq('id', user!.id)
+                .single();
 
-        if (!error && data?.market_id) {
-            setMarketId(data.market_id);
-            const mName = (data.markets as any)?.name;
-            setMarketName(mName);
+            if (profile?.market_id) {
+                setMarketId(profile.market_id);
+                // Fetch market details
+                const { data: market } = await supabase
+                    .from('markets')
+                    .select('name')
+                    .eq('id', profile.market_id)
+                    .single();
 
-            // Fetch both confirmations and recent entries
-            fetchConfirmations(data.market_id);
-            if (mName) {
-                fetchRecentEntries(mName);
+                if (market) {
+                    setMarketName(market.name);
+                    fetchRecentEntries(market.name);
+                }
             }
-        } else {
+        } catch (error) {
+            console.error('Error fetching market info:', error);
+        } finally {
             setLoading(false);
         }
     };
@@ -164,141 +156,12 @@ export default function MarketDashboardScreen() {
         }
     };
 
-    const fetchConfirmations = async (mId: string) => {
-        setLoading(true);
-        try {
-            // 1. Fetch pending confirmations for this market
-            const { data: confirmationsData, error: confError } = await supabase
-                .from('payment_confirmations')
-                .select('*')
-                .eq('market_id', mId)
-                .eq('status', 'pending')
-                .order('created_at', { ascending: false });
-
-            if (confError) {
-                console.error('Error fetching confirmations:', confError);
-                return;
-            }
-
-            if (!confirmationsData || confirmationsData.length === 0) {
-                setConfirmations([]);
-                return;
-            }
-
-            // 2. Extract unique entry IDs and requester IDs
-            const entryIds = confirmationsData.map(c => c.entry_id);
-            const sellerIds = [...new Set(confirmationsData.map(c => c.requested_by))];
-
-            // 3. Fetch entries details
-            const { data: entriesData, error: entriesError } = await supabase
-                .from('entries')
-                .select('id, mahsulot, miqdor, narx, summa')
-                .in('id', entryIds);
-
-            // 4. Fetch seller profiles
-            const { data: profilesData, error: profilesError } = await supabase
-                .from('profiles')
-                .select('id, full_name')
-                .in('id', sellerIds);
-
-            // 5. Create maps for quick lookup
-            const entryMap = new Map((entriesData || []).map(e => [e.id, e]));
-            const sellerMap = new Map((profilesData || []).map(p => [p.id, p]));
-
-            // 6. Map everything together
-            const mapped = confirmationsData.map(conf => ({
-                id: conf.id,
-                entry_id: conf.entry_id,
-                requested_by: conf.requested_by,
-                market_id: conf.market_id,
-                status: conf.status,
-                requested_status: conf.requested_status,
-                current_status: conf.current_status,
-                created_at: conf.created_at,
-                entry: entryMap.get(conf.entry_id) || { mahsulot: 'Noma\'lum', miqdor: '0', narx: '0', summa: '0' },
-                seller: sellerMap.get(conf.requested_by) || { full_name: 'Noma\'lum' }
-            }));
-
-            setConfirmations(mapped as any);
-        } catch (err) {
-            console.error('Unexpected error in fetchConfirmations:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const onRefresh = useCallback(() => {
         setRefreshing(true);
-        const promises = [];
-        if (marketId) promises.push(fetchConfirmations(marketId));
-        if (marketName) promises.push(fetchRecentEntries(marketName));
+        if (marketName) fetchRecentEntries(marketName);
+        setRefreshing(false);
+    }, [marketName]);
 
-        Promise.all(promises).finally(() => setRefreshing(false));
-    }, [marketId, marketName]);
-
-    const handleApprove = async (confirmation: PaymentConfirmation) => {
-        setProcessingId(confirmation.id);
-        try {
-            // Update the entry status to "to'langan"
-            const { error: entryError } = await supabase
-                .from('entries')
-                .update({ holat: "to'langan" })
-                .eq('id', confirmation.entry_id);
-
-            if (entryError) {
-                throw new Error('Yozuvni yangilashda xatolik: ' + entryError.message);
-            }
-
-            // Update the confirmation status
-            const { error: confirmError } = await supabase
-                .from('payment_confirmations')
-                .update({ status: 'approved' })
-                .eq('id', confirmation.id);
-
-            if (confirmError) {
-                throw new Error('Tasdiqlashda xatolik: ' + confirmError.message);
-            }
-
-            Alert.alert('Muvaffaqiyat', "To'lov tasdiqlandi!");
-            setConfirmations(prev => prev.filter(c => c.id !== confirmation.id));
-            if (marketName) fetchRecentEntries(marketName);
-        } catch (error: any) {
-            Alert.alert('Xatolik', error.message);
-        } finally {
-            setProcessingId(null);
-        }
-    };
-
-    const handleReject = async (confirmation: PaymentConfirmation) => {
-        setProcessingId(confirmation.id);
-        try {
-            // 1. Update the entry status back to "to'lanmagan"
-            const { error: entryError } = await supabase
-                .from('entries')
-                .update({ holat: "to'lanmagan" })
-                .eq('id', confirmation.entry_id);
-
-            if (entryError) {
-                console.error('Error reverting entry status:', entryError);
-            }
-
-            // 2. Update the confirmation status
-            const { error } = await supabase
-                .from('payment_confirmations')
-                .update({ status: 'rejected' })
-                .eq('id', confirmation.id);
-
-            if (error) throw error;
-
-            Alert.alert('Rad etildi', "To'lov so'rovi rad etildi");
-            setConfirmations(prev => prev.filter(c => c.id !== confirmation.id));
-            if (marketName) fetchRecentEntries(marketName);
-        } catch (error: any) {
-            Alert.alert('Xatolik', error.message);
-        } finally {
-            setProcessingId(null);
-        }
-    };
 
     const DetailsModal = () => (
         <Modal
@@ -408,9 +271,30 @@ export default function MarketDashboardScreen() {
                         <Text style={[styles.header, { color: theme.textColor }]}>Do'kon Paneli</Text>
                         <Text style={[styles.subtitle, { color: theme.labelColor }]}>Xush kelibsiz, {user?.email?.split('@')[0]}!</Text>
                     </View>
-                    <TouchableOpacity onPress={signOut} style={styles.logoutBtn}>
-                        <LogOut size={18} color="#ef4444" />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                        <TouchableOpacity
+                            style={{ position: 'relative', padding: 4 }}
+                            onPress={() => navigation.navigate('Notifications')}
+                        >
+                            <Bell size={24} color={theme.textColor} />
+                            {pendingRequests.length > 0 && (
+                                <View style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    right: 0,
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: 5,
+                                    backgroundColor: '#ef4444',
+                                    borderWidth: 1,
+                                    borderColor: theme.backgroundColor
+                                }} />
+                            )}
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={signOut} style={styles.logoutBtn}>
+                            <LogOut size={18} color="#ef4444" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Stats Section */}
@@ -432,88 +316,6 @@ export default function MarketDashboardScreen() {
                         isDark={isDark}
                     />
                 </ScrollView>
-
-                {/* Confirmations Section */}
-                <View style={styles.sectionHeader}>
-                    <Text style={[styles.subHeader, { color: theme.labelColor, marginBottom: 0 }]}>
-                        To'lov tasdiqnomalari ({confirmations.length})
-                    </Text>
-                    <TouchableOpacity onPress={() => marketId && fetchConfirmations(marketId)}>
-                        <Text style={styles.refreshText}>Yangilash</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={[styles.card, { backgroundColor: theme.cardBackground, borderColor: theme.borderColor, marginBottom: 24 }]}>
-                    {loading && confirmations.length === 0 ? (
-                        <ActivityIndicator size="large" color="#10b981" style={{ padding: 40 }} />
-                    ) : confirmations.length === 0 ? (
-                        <View style={{ padding: 40, alignItems: 'center' }}>
-                            <Clock size={40} color={isDark ? '#334155' : '#e2e8f0'} style={{ marginBottom: 12 }} />
-                            <Text style={{ color: theme.labelColor, textAlign: 'center' }}>Kutilayotgan so'rovlar yo'q</Text>
-                        </View>
-                    ) : (
-                        confirmations.map(confirmation => (
-                            <View
-                                key={confirmation.id}
-                                style={[styles.confirmationItem, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderColor: theme.borderColor }]}
-                            >
-                                <View style={styles.itemRow}>
-                                    <View style={[styles.itemIconBox, { backgroundColor: 'rgba(79, 70, 229, 0.1)' }]}>
-                                        <UserIcon size={18} color="#4f46e5" />
-                                    </View>
-                                    <View style={styles.itemMain}>
-                                        <Text style={styles.labelSmall}>Sotuvchi</Text>
-                                        <Text style={[styles.valueSmall, { color: theme.textColor }]}>{confirmation.seller?.full_name}</Text>
-                                    </View>
-                                    <View style={styles.itemMain}>
-                                        <Text style={styles.labelSmall}>Summa</Text>
-                                        <Text style={[styles.valueSmall, { color: '#10b981' }]}>{new Intl.NumberFormat('uz-UZ').format(Number(confirmation.entry?.summa || '0'))} so'm</Text>
-                                    </View>
-                                </View>
-
-                                <View style={[styles.itemRow, { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: isDark ? '#334155' : '#f1f5f9' }]}>
-                                    <View style={[styles.itemIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
-                                        <PackageIcon size={18} color="#10b981" />
-                                    </View>
-                                    <View style={styles.itemMain}>
-                                        <Text style={styles.labelSmall}>Mahsulot</Text>
-                                        <Text style={[styles.valueSmall, { color: theme.textColor }]}>{confirmation.entry?.mahsulot}</Text>
-                                        <Text style={styles.details}>{confirmation.entry?.miqdor}</Text>
-                                    </View>
-                                    <View style={styles.itemMain}>
-                                        <Text style={styles.labelSmall}>O'zgarish</Text>
-                                        <View style={styles.transitionBox}>
-                                            <Text style={styles.oldStatus}>Qarz</Text>
-                                            <Text style={styles.arrow}>→</Text>
-                                            <Text style={styles.newStatus}>To'langan</Text>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                <View style={[styles.buttonRow, { marginTop: 16 }]}>
-                                    <TouchableOpacity
-                                        style={[styles.actionBtn, styles.approveBtn]}
-                                        onPress={() => handleApprove(confirmation)}
-                                        disabled={processingId === confirmation.id}
-                                    >
-                                        {processingId === confirmation.id ? (
-                                            <ActivityIndicator color="#fff" size="small" />
-                                        ) : (
-                                            <Text style={styles.actionBtnText}>Tasdiqlash ✓</Text>
-                                        )}
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={[styles.actionBtn, styles.rejectBtn]}
-                                        onPress={() => handleReject(confirmation)}
-                                        disabled={processingId === confirmation.id}
-                                    >
-                                        <Text style={styles.actionBtnText}>Rad etish ✗</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        ))
-                    )}
-                </View>
 
                 {/* Recent Purchases Section */}
                 <View style={styles.sectionHeader}>
@@ -581,7 +383,7 @@ export default function MarketDashboardScreen() {
                 </View>
             </ScrollView>
             <DetailsModal />
-        </SafeAreaView>
+        </SafeAreaView >
     );
 }
 

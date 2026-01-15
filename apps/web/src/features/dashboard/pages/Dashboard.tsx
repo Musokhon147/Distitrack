@@ -42,21 +42,24 @@ export const SimplifiedDashboard: React.FC = () => {
 
     const handleSubmit = () => {
         const newErrors: Record<string, boolean> = {};
-        
+
         if (!formData.marketNomi) newErrors.marketNomi = true;
         if (!formData.mahsulotTuri) newErrors.mahsulotTuri = true;
         if (!formData.miqdori) newErrors.miqdori = true;
-        
+
         setErrors(newErrors);
-        
+
         if (Object.keys(newErrors).length > 0) {
             toast.error('Iltimos, barcha majburiy maydonlarni to\'ldiring', {
                 icon: <AlertCircle size={18} />
             });
             return;
         }
-        
-        addEntry(formData);
+
+        addEntry({
+            ...formData,
+            summa: Number(formData.narx) || 0
+        });
         setFormData({
             marketNomi: '',
             marketRaqami: '+998',
@@ -158,11 +161,10 @@ export const SimplifiedDashboard: React.FC = () => {
                                 <input
                                     type="text"
                                     placeholder="+998"
-                                    className={`w-full p-5 bg-white/50 border rounded-2xl focus:ring-4 focus:ring-primary-500/10 outline-none dark:text-white transition-all shadow-sm text-lg font-medium ${
-                                        errors.marketRaqami 
-                                            ? 'border-red-500 ring-2 ring-red-500/20 dark:border-red-500' 
+                                    className={`w-full p-5 bg-white/50 border rounded-2xl focus:ring-4 focus:ring-primary-500/10 outline-none dark:text-white transition-all shadow-sm text-lg font-medium ${errors.marketRaqami
+                                            ? 'border-red-500 ring-2 ring-red-500/20 dark:border-red-500'
                                             : 'border-slate-200/50 dark:bg-slate-950/30 dark:border-slate-800/50 focus:border-primary-500'
-                                    }`}
+                                        }`}
                                     value={formData.marketRaqami}
                                     onChange={(e) => {
                                         setFormData({ ...formData, marketRaqami: e.target.value });
@@ -197,11 +199,10 @@ export const SimplifiedDashboard: React.FC = () => {
                                 <input
                                     type="text"
                                     placeholder="Masalan: 50 kg"
-                                    className={`w-full p-5 bg-white/50 border rounded-2xl focus:ring-4 focus:ring-primary-500/10 outline-none dark:text-white transition-all shadow-sm text-lg font-medium placeholder:text-slate-300 dark:placeholder:text-slate-700 ${
-                                        errors.miqdori 
-                                            ? 'border-red-500 ring-2 ring-red-500/20 dark:border-red-500' 
+                                    className={`w-full p-5 bg-white/50 border rounded-2xl focus:ring-4 focus:ring-primary-500/10 outline-none dark:text-white transition-all shadow-sm text-lg font-medium placeholder:text-slate-300 dark:placeholder:text-slate-700 ${errors.miqdori
+                                            ? 'border-red-500 ring-2 ring-red-500/20 dark:border-red-500'
                                             : 'border-slate-200/50 dark:bg-slate-950/30 dark:border-slate-800/50 focus:border-primary-500'
-                                    }`}
+                                        }`}
                                     value={formData.miqdori}
                                     onChange={(e) => {
                                         setFormData({ ...formData, miqdori: e.target.value });
@@ -211,7 +212,7 @@ export const SimplifiedDashboard: React.FC = () => {
                                     }}
                                 />
                                 {errors.miqdori && (
-                                    <motion.p 
+                                    <motion.p
                                         initial={{ opacity: 0, y: -5 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         className="text-xs text-red-500 font-medium ml-1 flex items-center gap-1"

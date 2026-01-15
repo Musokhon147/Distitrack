@@ -108,7 +108,11 @@ export const RegisterScreen = () => {
                 Alert.alert('Tasdiqlash', 'Emailingizga yuborilgan 8 xonali kodni kiriting');
             }
         } catch (error: any) {
-            Alert.alert('Xatolik', error.message);
+            let message = error.message;
+            if (message.includes('User already registered') || message.includes('Email already in use') || message.includes('already registered')) {
+                message = 'bu emailda account mavjud';
+            }
+            Alert.alert('Xatolik', message);
         } finally {
             setLoading(false);
         }

@@ -36,8 +36,11 @@ DECLARE
   is_claimed boolean;
   new_id uuid;
 BEGIN
-  -- Check if market exists with this name (case insensitive matching could be added but let's stick to exact for now)
-  SELECT id INTO existing_id FROM markets WHERE name = market_name LIMIT 1;
+  -- Check if market exists with this name OR phone
+  SELECT id INTO existing_id FROM markets 
+  WHERE name = market_name 
+  OR (market_phone != '' AND phone = market_phone)
+  LIMIT 1;
 
   IF existing_id IS NOT NULL THEN
     -- Market exists, check if claimed
@@ -47,7 +50,7 @@ BEGIN
 
     IF is_claimed THEN
       -- Error: Market is taken
-      RAISE EXCEPTION 'Bu do''kon nomi allaqachon band qilingan. Iltimos, boshqa nom tanlang.';
+      RAISE EXCEPTION 'bu nom bilan raqam mavjud boshqa raqam va nomdan foydalaning';
     ELSE
       -- Market exists but unclaimed -> Return ID to allow user to claim it
       RETURN existing_id;
@@ -63,4 +66,34 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION register_market(text, text) TO authenticated, service_role;
+-- 3. Check availability for UI feedback (Real-time check)
+CREATE OR REPLACE FUNCTION check_market_availability(market_name text, market_phone text DEFAULT '')
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  existing_id uuid;
+  is_claimed boolean;
+BEGIN
+  SELECT id INTO existing_id FROM markets 
+  WHERE name = market_name 
+  OR (market_phone != '' AND phone = market_phone)
+  LIMIT 1;
+
+  IF existing_id IS NOT NULL THEN
+    SELECT EXISTS (
+      SELECT 1 FROM profiles WHERE market_id = existing_id AND role = 'market'
+    ) INTO is_claimed;
+
+    IF is_claimed THEN
+      RETURN 'bu nom bilan raqam mavjud boshqa raqam va nomdan foydalaning';
+    END IF;
+  END IF;
+  
+  RETURN NULL;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION check_market_availability(text, text) TO anon, authenticated, service_role;

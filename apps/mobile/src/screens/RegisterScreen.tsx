@@ -27,6 +27,8 @@ export const RegisterScreen = () => {
     const [newMarketName, setNewMarketName] = useState('');
     const [newMarketPhone, setNewMarketPhone] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [modalError, setModalError] = useState<string | null>(null);
+    const [modalLoading, setModalLoading] = useState(false);
 
     const { control, handleSubmit, formState: { errors }, getValues } = useForm<RegisterInput>({
         resolver: zodResolver(registerSchema),
@@ -138,6 +140,36 @@ export const RegisterScreen = () => {
     const filteredMarkets = markets.filter(m =>
         m.name.toLowerCase().includes(marketSearch.toLowerCase())
     );
+
+    const handleModalSave = async () => {
+        if (!newMarketName.trim()) {
+            setModalError("Do'kon nomini kiriting");
+            return;
+        }
+
+        setModalLoading(true);
+        setModalError(null);
+        try {
+            const { data: errorMsg, error } = await supabase.rpc('check_market_availability', {
+                market_name: newMarketName.trim(),
+                market_phone: newMarketPhone.trim()
+            });
+
+            if (error) throw error;
+
+            if (errorMsg) {
+                setModalError(errorMsg);
+            } else {
+                setSelectedMarket(null);
+                setIsMarketModalVisible(false);
+                setModalError(null);
+            }
+        } catch (error: any) {
+            setModalError(error.message);
+        } finally {
+            setModalLoading(false);
+        }
+    };
 
     const themeColor = selectedRole === 'seller' ? '#4f46e5' : '#10b981';
 
@@ -351,18 +383,18 @@ export const RegisterScreen = () => {
                                         keyboardType="phone-pad"
                                     />
                                 </View>
+                                {modalError && (
+                                    <Text style={[styles.errorText, { marginBottom: 12, textAlign: 'center' }]}>
+                                        {modalError}
+                                    </Text>
+                                )}
+
                                 <TouchableOpacity
-                                    style={[styles.button, { backgroundColor: '#10b981' }]}
-                                    onPress={() => {
-                                        if (!newMarketName.trim()) {
-                                            Alert.alert('Xatolik', "Do'kon nomini kiriting");
-                                            return;
-                                        }
-                                        setSelectedMarket(null);
-                                        setIsMarketModalVisible(false);
-                                    }}
+                                    style={[styles.button, { backgroundColor: '#10b981' }, modalLoading && styles.buttonDisabled]}
+                                    onPress={handleModalSave}
+                                    disabled={modalLoading}
                                 >
-                                    <Text style={styles.buttonText}>Saqlash</Text>
+                                    {modalLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Saqlash</Text>}
                                 </TouchableOpacity>
                                 <TouchableOpacity onPress={() => {
                                     setIsAddingNewMarket(false);

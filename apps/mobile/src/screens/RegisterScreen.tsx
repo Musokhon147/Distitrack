@@ -39,12 +39,12 @@ export const RegisterScreen = () => {
     useEffect(() => {
         const fetchMarkets = async () => {
             const { data, error } = await supabase
-                .from('markets')
-                .select('id, name')
-                .order('name');
+                .rpc('get_unclaimed_markets');
 
             if (!error && data) {
                 setMarkets(data);
+            } else if (error) {
+                console.error('Error fetching unclaimed markets:', error);
             }
         };
         fetchMarkets();
@@ -77,14 +77,14 @@ export const RegisterScreen = () => {
                 // If adding a new market, create it first
                 if (selectedRole === 'market' && isAddingNewMarket && newMarketName.trim()) {
                     const { data: newMarketId, error: marketError } = await supabase
-                        .rpc('create_market', {
+                        .rpc('register_market', {
                             market_name: newMarketName.trim(),
                             market_phone: newMarketPhone.trim()
                         });
 
                     if (marketError) {
                         console.error('Error creating market:', marketError);
-                        throw new Error('Do\'kon yaratishda xatolik: ' + marketError.message);
+                        throw new Error(marketError.message);
                     }
                     finalMarketId = newMarketId;
                 }

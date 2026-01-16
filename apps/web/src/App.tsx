@@ -3,8 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { SimplifiedDashboard } from './features/dashboard/pages/Dashboard';
 import { Records } from './features/records/pages/Records';
 import { Hisobot } from './features/records/pages/Hisobot';
-import { Login } from './features/auth/pages/Login';
-import { Register } from './features/auth/pages/Register';
+import { Auth } from './features/auth/pages/Auth';
 import { Profile } from './features/dashboard/pages/Profile';
 import { Markets } from './features/markets/pages/Markets';
 import { Products } from './features/products/pages/Products';
@@ -83,7 +82,7 @@ function ProtectedRoute({ children, role }: { children: React.ReactNode, role?: 
 function AppContent() {
     const location = useLocation();
     const { isAuthenticated, profile, loading } = useAuth();
-    const isAuthPage = ['/login', '/register', '/forgot-password', '/reset-password'].includes(location.pathname);
+    const isAuthPage = ['/login', '/forgot-password', '/reset-password'].includes(location.pathname);
 
     if (loading) {
         return <LoadingScreen />;
@@ -95,8 +94,8 @@ function AppContent() {
             <main className={!isAuthPage ? "py-6 md:py-10 px-4 md:px-8" : ""}>
                 <AnimatePresence mode="wait">
                     <Routes location={location} key={location.pathname}>
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/register" element={<Register />} />
+                        <Route path="/login" element={<Auth />} />
+                        <Route path="/register" element={<Navigate to="/login" replace />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
                         <Route

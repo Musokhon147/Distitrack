@@ -14,6 +14,8 @@ import MarketDashboardScreen from './src/screens/MarketDashboardScreen';
 import { MarketsScreen } from './src/screens/MarketsScreen';
 import { RecordsScreen } from './src/screens/RecordsScreen';
 import { ProductsScreen } from './src/screens/ProductsScreen';
+import { AdminDashboardScreen } from './src/screens/AdminDashboardScreen';
+import { AdminUsersScreen } from './src/screens/AdminUsersScreen';
 import { View, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { supabase } from './src/lib/supabase';
@@ -24,7 +26,8 @@ import {
   User as UserIcon,
   Package,
   FileText,
-  Settings
+  Settings,
+  Users
 } from 'lucide-react-native';
 import { ReportsScreen } from './src/screens/ReportsScreen';
 import { NotificationsScreen } from './src/screens/NotificationsScreen';
@@ -63,6 +66,46 @@ function MarketTabNavigator() {
     >
       <Tab.Screen name="Asosiy" component={MarketDashboardScreen} />
       <Tab.Screen name="Hisobot" component={ReportsScreen} />
+      <Tab.Screen name="Sozlamalar" component={ProfileScreen} />
+    </Tab.Navigator>
+  );
+}
+
+function AdminTabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }: { route: any }) => ({
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#ffffff',
+          borderTopWidth: 1,
+          borderTopColor: '#f1f5f9',
+          height: Platform.OS === 'ios' ? 88 : 68,
+          paddingBottom: Platform.OS === 'ios' ? 30 : 12,
+          paddingTop: 12,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        tabBarActiveTintColor: '#6366f1',
+        tabBarInactiveTintColor: '#94a3b8',
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '600',
+        },
+        tabBarIcon: ({ color, size }: { color: string; size: number }) => {
+          if (route.name === 'Dashboard') return <LayoutDashboard size={size} color={color} />;
+          if (route.name === 'Foydalanuvchilar') return <Users size={size} color={color} />;
+          if (route.name === 'Do\'konlar') return <Store size={size} color={color} />;
+          if (route.name === 'Hisobotlar') return <FileText size={size} color={color} />;
+          if (route.name === 'Sozlamalar') return <Settings size={size} color={color} />;
+          return null;
+        },
+      })}
+    >
+      <Tab.Screen name="Dashboard" component={AdminDashboardScreen} />
+      <Tab.Screen name="Foydalanuvchilar" component={AdminUsersScreen} />
+      <Tab.Screen name="Do'konlar" component={MarketsScreen} />
+      <Tab.Screen name="Hisobotlar" component={ReportsScreen} />
       <Tab.Screen name="Sozlamalar" component={ProfileScreen} />
     </Tab.Navigator>
   );
@@ -112,7 +155,7 @@ function TabNavigator() {
 
 function AppNavigator() {
   const { session, user, loading } = useAuth();
-  const [userRole, setUserRole] = useState<'seller' | 'market' | null>(null);
+  const [userRole, setUserRole] = useState<'seller' | 'market' | 'admin' | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
 
   useEffect(() => {
@@ -151,7 +194,9 @@ function AppNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {session ? (
         <>
-          {userRole === 'market' ? (
+          {userRole === 'admin' ? (
+            <Stack.Screen name="AdminMain" component={AdminTabNavigator} />
+          ) : userRole === 'market' ? (
             <Stack.Screen name="MarketMain" component={MarketTabNavigator} />
           ) : (
             <>

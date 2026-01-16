@@ -180,10 +180,14 @@ export const RegisterScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={{ flex: 1 }}
             >
-                <ScrollView contentContainerStyle={styles.scrollContent}>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
                     <View style={styles.content}>
                         <View style={styles.header}>
                             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -356,109 +360,114 @@ export const RegisterScreen = () => {
                 transparent={true}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>
-                                {isAddingNewMarket ? "Yangi do'kon qo'shish" : "Do'konni tanlang"}
-                            </Text>
-                            <TouchableOpacity onPress={() => {
-                                setIsMarketModalVisible(false);
-                                setIsAddingNewMarket(false);
-                            }}>
-                                <Text style={styles.closeButton}>Yopish</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {isAddingNewMarket ? (
-                            <>
-                                <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>Do'kon nomi</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="Do'kon nomini kiriting..."
-                                        placeholderTextColor="#94a3b8"
-                                        value={newMarketName}
-                                        onChangeText={setNewMarketName}
-                                    />
-                                </View>
-                                <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>Telefon raqami</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="+998 90 123 45 67"
-                                        placeholderTextColor="#94a3b8"
-                                        value={newMarketPhone}
-                                        onChangeText={setNewMarketPhone}
-                                        keyboardType="phone-pad"
-                                    />
-                                </View>
-                                {modalError && (
-                                    <Text style={[styles.errorText, { marginBottom: 12, textAlign: 'center' }]}>
-                                        {modalError}
-                                    </Text>
-                                )}
-
-                                <TouchableOpacity
-                                    style={[styles.button, { backgroundColor: '#10b981' }, modalLoading && styles.buttonDisabled]}
-                                    onPress={handleModalSave}
-                                    disabled={modalLoading}
-                                >
-                                    {modalLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Saqlash</Text>}
-                                </TouchableOpacity>
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                        style={{ width: '100%' }}
+                    >
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>
+                                    {isAddingNewMarket ? "Yangi do'kon qo'shish" : "Do'konni tanlang"}
+                                </Text>
                                 <TouchableOpacity onPress={() => {
+                                    setIsMarketModalVisible(false);
                                     setIsAddingNewMarket(false);
-                                    setNewMarketName('');
-                                    setNewMarketPhone('');
                                 }}>
-                                    <Text style={[styles.changeEmailText, { color: '#10b981' }]}>← Mavjud do'konlardan tanlash</Text>
+                                    <Text style={styles.closeButton}>Yopish</Text>
                                 </TouchableOpacity>
-                            </>
-                        ) : (
-                            <>
-                                <TextInput
-                                    style={styles.searchInput}
-                                    placeholder="Qidirish..."
-                                    value={marketSearch}
-                                    onChangeText={setMarketSearch}
-                                />
+                            </View>
 
-                                <FlatList
-                                    data={filteredMarkets}
-                                    keyExtractor={(item) => item.id}
-                                    renderItem={({ item }) => (
-                                        <TouchableOpacity
-                                            style={styles.marketItem}
-                                            onPress={() => {
-                                                setSelectedMarket(item);
-                                                setIsAddingNewMarket(false);
-                                                setNewMarketName('');
-                                                setNewMarketPhone('');
-                                                setIsMarketModalVisible(false);
-                                            }}
-                                        >
-                                            <Text style={[
-                                                styles.marketItemText,
-                                                selectedMarket?.id === item.id && { color: themeColor, fontWeight: 'bold' }
-                                            ]}>
-                                                {item.name}
-                                            </Text>
-                                        </TouchableOpacity>
+                            {isAddingNewMarket ? (
+                                <>
+                                    <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>Do'kon nomi</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Do'kon nomini kiriting..."
+                                            placeholderTextColor="#94a3b8"
+                                            value={newMarketName}
+                                            onChangeText={setNewMarketName}
+                                        />
+                                    </View>
+                                    <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>Telefon raqami</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="+998 90 123 45 67"
+                                            placeholderTextColor="#94a3b8"
+                                            value={newMarketPhone}
+                                            onChangeText={setNewMarketPhone}
+                                            keyboardType="phone-pad"
+                                        />
+                                    </View>
+                                    {modalError && (
+                                        <Text style={[styles.errorText, { marginBottom: 12, textAlign: 'center' }]}>
+                                            {modalError}
+                                        </Text>
                                     )}
-                                    ListEmptyComponent={
-                                        <Text style={styles.emptyText}>Do'kon topilmadi</Text>
-                                    }
-                                    ListFooterComponent={
-                                        <TouchableOpacity
-                                            style={[styles.addNewMarketBtn, { borderColor: '#10b981' }]}
-                                            onPress={() => setIsAddingNewMarket(true)}
-                                        >
-                                            <Text style={[styles.addNewMarketText, { color: '#10b981' }]}>+ Yangi do'kon qo'shish</Text>
-                                        </TouchableOpacity>
-                                    }
-                                />
-                            </>
-                        )}
-                    </View>
+
+                                    <TouchableOpacity
+                                        style={[styles.button, { backgroundColor: '#10b981' }, modalLoading && styles.buttonDisabled]}
+                                        onPress={handleModalSave}
+                                        disabled={modalLoading}
+                                    >
+                                        {modalLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Saqlash</Text>}
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => {
+                                        setIsAddingNewMarket(false);
+                                        setNewMarketName('');
+                                        setNewMarketPhone('');
+                                    }}>
+                                        <Text style={[styles.changeEmailText, { color: '#10b981' }]}>← Mavjud do'konlardan tanlash</Text>
+                                    </TouchableOpacity>
+                                </>
+                            ) : (
+                                <>
+                                    <TextInput
+                                        style={styles.searchInput}
+                                        placeholder="Qidirish..."
+                                        value={marketSearch}
+                                        onChangeText={setMarketSearch}
+                                    />
+
+                                    <FlatList
+                                        data={filteredMarkets}
+                                        keyExtractor={(item) => item.id}
+                                        renderItem={({ item }) => (
+                                            <TouchableOpacity
+                                                style={styles.marketItem}
+                                                onPress={() => {
+                                                    setSelectedMarket(item);
+                                                    setIsAddingNewMarket(false);
+                                                    setNewMarketName('');
+                                                    setNewMarketPhone('');
+                                                    setIsMarketModalVisible(false);
+                                                }}
+                                            >
+                                                <Text style={[
+                                                    styles.marketItemText,
+                                                    selectedMarket?.id === item.id && { color: themeColor, fontWeight: 'bold' }
+                                                ]}>
+                                                    {item.name}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )}
+                                        ListEmptyComponent={
+                                            <Text style={styles.emptyText}>Do'kon topilmadi</Text>
+                                        }
+                                        ListFooterComponent={
+                                            <TouchableOpacity
+                                                style={[styles.addNewMarketBtn, { borderColor: '#10b981' }]}
+                                                onPress={() => setIsAddingNewMarket(true)}
+                                            >
+                                                <Text style={[styles.addNewMarketText, { color: '#10b981' }]}>+ Yangi do'kon qo'shish</Text>
+                                            </TouchableOpacity>
+                                        }
+                                    />
+                                </>
+                            )}
+                        </View>
+                    </KeyboardAvoidingView>
                 </View>
             </Modal>
         </SafeAreaView>
@@ -474,9 +483,8 @@ const styles = StyleSheet.create({
         flexGrow: 1,
     },
     content: {
-        flex: 1,
         padding: 24,
-        justifyContent: 'center',
+        paddingBottom: 40,
     },
     header: {
         marginBottom: 32,

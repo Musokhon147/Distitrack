@@ -32,7 +32,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useEntryContext } from '../context/EntryContext';
 
 
-const StatCard = ({ label, value, icon: Icon, color, subtitle, isDark }: any) => (
+const StatCard = ({ label, value, icon: Icon, color, subtitle, isDark, theme }: any) => (
     <View style={[styles.statCard, { backgroundColor: isDark ? '#1e293b' : '#ffffff', borderColor: isDark ? '#334155' : '#e2e8f0' }]}>
         <View style={styles.statHeader}>
             <View style={[styles.statIconContainer, { backgroundColor: color + '20' }]}>
@@ -45,6 +45,215 @@ const StatCard = ({ label, value, icon: Icon, color, subtitle, isDark }: any) =>
         {subtitle && <Text style={styles.statSubtitle}>{subtitle}</Text>}
     </View>
 );
+
+const DetailsModal = ({ entry, visible, onClose, theme, isDark, pendingRequests, requestChange }: any) => {
+    if (!entry) return null;
+
+    const pendingUpdate = pendingRequests.find((req: any) =>
+        req.entry_id === entry.id &&
+        req.request_type === 'UPDATE_STATUS' &&
+        req.status === 'pending'
+    );
+
+    const pendingDelete = pendingRequests.find((req: any) =>
+        req.entry_id === entry.id &&
+        req.request_type === 'DELETE' &&
+        req.status === 'pending'
+    );
+
+    const handleChangeStatus = async () => {
+        const newStatus = entry.holat === "to'langan" ? "to'lanmagan" : "to'langan";
+
+        Alert.alert(
+            "Holatni o'zgartirish",
+            `Ushbu xarid holatini "${newStatus === "to'langan" ? "To'langan" : "Qarz"}" ga o'zgartirish uchun so'rov yuborilsinmi?`,
+            [
+                { text: "Bekor qilish", style: "cancel" },
+                {
+                    text: "So'rov yuborish",
+                    onPress: async () => {
+                        await requestChange(entry.id, 'UPDATE_STATUS', newStatus);
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleDeleteRequest = async () => {
+        Alert.alert(
+            "O'chirish so'rovi",
+            "Ushbu xaridni o'chirish uchun so'rov yuborilsinmi?",
+            [
+                { text: "Bekor qilish", style: "cancel" },
+                {
+                    text: "So'rov yuborish",
+                    style: 'destructive',
+                    onPress: async () => {
+                        await requestChange(entry.id, 'DELETE');
+                    }
+                }
+            ]
+        );
+    };
+
+    const formatDate = (dateString: string) => {
+        if (!dateString) return 'Bugun';
+        try {
+            const date = new Date(dateString);
+            return new Intl.DateTimeFormat('uz-UZ', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(date);
+        } catch (e) {
+            return dateString;
+        }
+    };
+
+    return (
+        <Modal
+            visible={visible}
+            transparent
+            animationType="slide"
+            onRequestClose={onClose}
+        >
+            <View style={styles.modalOverlay}>
+                <View style={[styles.modalContent, { backgroundColor: theme.cardBackground, height: '85%' }]}>
+                    <View style={styles.modalHeader}>
+                        <View style={styles.modalHeaderBar} />
+                        <Text style={[styles.modalTitle, { color: theme.textColor }]}>Xarid Tafsilotlari</Text>
+                        <TouchableOpacity
+                            onPress={onClose}
+                            style={styles.modalCloseBtn}
+                        >
+                            <XCircle size={24} color="#94a3b8" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                        <View style={styles.modalSection}>
+                            <Text style={styles.labelSmall}>Mahsulot</Text>
+                            <View style={styles.detailRow}>
+                                <View style={[styles.itemIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                                    <PackageIcon size={20} color="#10b981" />
+                                </View>
+                                <Text style={[styles.detailValue, { color: theme.textColor }]}>{entry.mahsulot}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.modalSection}>
+                            <Text style={styles.labelSmall}>Sotuvchi</Text>
+                            <View style={styles.detailRow}>
+                                <View style={[styles.itemIconBox, { backgroundColor: 'rgba(79, 70, 229, 0.1)' }]}>
+                                    <UserIcon size={20} color="#4f46e5" />
+                                </View>
+                                <Text style={[styles.detailValue, { color: theme.textColor }]}>{entry.seller_name}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.gridRow}>
+                            <View style={styles.gridCol}>
+                                <Text style={styles.labelSmall}>Miqdori</Text>
+                                <Text style={[styles.gridValue, { color: theme.textColor }]}>{entry.miqdor}</Text>
+                            </View>
+                            <View style={styles.gridCol}>
+                                <Text style={styles.labelSmall}>Sana</Text>
+                                <Text style={[styles.gridValue, { color: theme.textColor }]}>{entry.sana || 'Bugun'}</Text>
+                            </View>
+                        </View>
+
+                        <View style={[styles.modalSection, { marginTop: 12 }]}>
+                            <Text style={styles.labelSmall}>Umumiy Summa</Text>
+                            <View style={styles.amountBanner}>
+                                <DollarSign size={24} color="#10b981" />
+                                <Text style={styles.bannerText}>
+                                    {new Intl.NumberFormat('uz-UZ').format(Number(entry.summa || '0'))} so'm
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.modalSection}>
+                            <Text style={styles.labelSmall}>To'lov Holati</Text>
+                            <View style={[
+                                styles.statusBanner,
+                                { backgroundColor: entry.holat === "to'langan" ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }
+                            ]}>
+                                {entry.holat === "to'langan" ? (
+                                    <CheckCircle2 size={18} color="#10b981" />
+                                ) : (
+                                    <Clock size={18} color="#ef4444" />
+                                )}
+                                <Text style={[
+                                    styles.statusBannerText,
+                                    { color: entry.holat === "to'langan" ? '#10b981' : '#ef4444' }
+                                ]}>
+                                    {entry.holat === "to'langan" ? "To'langan" : "Qarz (To'lanmagan)"}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.modalSection}>
+                            <Text style={[styles.labelSmall, { marginBottom: 12 }]}>So'rovlar</Text>
+                            <View style={{ gap: 12 }}>
+                                {pendingUpdate ? (
+                                    <View style={[styles.actionRequestBtn, { opacity: 0.7 }]}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                            <Clock size={16} color="#f59e0b" />
+                                            <Text style={[styles.actionRequestText, { color: '#f59e0b' }]}>
+                                                Holat o'zgarishi kutilmoqda...
+                                            </Text>
+                                        </View>
+                                    </View>
+                                ) : (
+                                    <TouchableOpacity
+                                        style={styles.actionRequestBtn}
+                                        onPress={handleChangeStatus}
+                                    >
+                                        <Text style={styles.actionRequestText}>
+                                            {entry.holat === "to'langan"
+                                                ? "Qarz deb belgilash (So'rov)"
+                                                : "To'langan deb belgilash (So'rov)"}
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
+
+                                {pendingDelete ? (
+                                    <View style={[styles.actionRequestBtn, { backgroundColor: '#fee2e2', opacity: 0.7 }]}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                            <Clock size={16} color="#f59e0b" />
+                                            <Text style={[styles.actionRequestText, { color: '#f59e0b' }]}>
+                                                O'chirish kutilmoqda...
+                                            </Text>
+                                        </View>
+                                    </View>
+                                ) : (
+                                    <TouchableOpacity
+                                        style={[styles.actionRequestBtn, { backgroundColor: '#fee2e2' }]}
+                                        onPress={handleDeleteRequest}
+                                    >
+                                        <Text style={[styles.actionRequestText, { color: '#ef4444' }]}>
+                                            O'chirish so'rovi
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </View>
+
+                        <View style={{ height: 20 }} />
+                    </ScrollView>
+
+                    <TouchableOpacity
+                        style={styles.modalConfirmBtn}
+                        onPress={onClose}
+                    >
+                        <Text style={styles.modalConfirmText}>Yopish</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
+    );
+};
 
 export default function MarketDashboardScreen() {
     const colorScheme = useColorScheme();
@@ -64,10 +273,10 @@ export default function MarketDashboardScreen() {
     const theme = isDark ? darkStyles : lightStyles;
 
     useEffect(() => {
-        if (activeTab === 'requests' && marketName) {
+        if (activeTab === 'requests' && marketId) {
             fetchAllMarketEntries();
         }
-    }, [activeTab, marketName]);
+    }, [activeTab, marketId]);
 
     const fetchAllMarketEntries = async () => {
         if (!marketId) return;
@@ -199,216 +408,11 @@ export default function MarketDashboardScreen() {
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
-        if (marketName) fetchRecentEntries(marketName);
+        if (marketId) fetchRecentEntries(marketId);
         setRefreshing(false);
-    }, [marketName]);
+    }, [marketId]);
 
 
-    const DetailsModal = () => {
-        // We can't use hooks directly inside this nested component if it's defined inside the main component body 
-        // effectively capturing the parent scope. 
-        // But since we need `selectedEntry` which is state, let's keep it here.
-        // We need to use `requestChange` from the parent scope.
-
-        const pendingUpdate = selectedEntry ? pendingRequests.find(req =>
-            req.entry_id === selectedEntry.id &&
-            req.request_type === 'UPDATE_STATUS' &&
-            req.status === 'pending'
-        ) : null;
-
-        const pendingDelete = selectedEntry ? pendingRequests.find(req =>
-            req.entry_id === selectedEntry.id &&
-            req.request_type === 'DELETE' &&
-            req.status === 'pending'
-        ) : null;
-
-        const handleChangeStatus = async () => {
-            if (!selectedEntry) return;
-            const newStatus = selectedEntry.holat === "to'langan" ? "to'lanmagan" : "to'langan";
-
-            Alert.alert(
-                "Holatni o'zgartirish",
-                `Ushbu xarid holatini "${newStatus === "to'langan" ? "To'langan" : "Qarz"}" ga o'zgartirish uchun so'rov yuborilsinmi?`,
-                [
-                    { text: "Bekor qilish", style: "cancel" },
-                    {
-                        text: "So'rov yuborish",
-                        onPress: async () => {
-                            await requestChange(selectedEntry.id, 'UPDATE_STATUS', newStatus);
-                            // We don't close the modal, so user can see the status update to "Waiting"
-                            // But we might want to refresh entries/requests
-                            // triggerRefresh(); // The context should auto-update pendingRequests
-                        }
-                    }
-                ]
-            );
-        };
-
-        const handleDeleteRequest = async () => {
-            if (!selectedEntry) return;
-
-            Alert.alert(
-                "O'chirish so'rovi",
-                "Ushbu xaridni o'chirish uchun so'rov yuborilsinmi?",
-                [
-                    { text: "Bekor qilish", style: "cancel" },
-                    {
-                        text: "So'rov yuborish",
-                        style: 'destructive',
-                        onPress: async () => {
-                            await requestChange(selectedEntry.id, 'DELETE');
-                        }
-                    }
-                ]
-            );
-        };
-
-        return (
-            <Modal
-                visible={!!selectedEntry}
-                transparent
-                animationType="slide"
-                onRequestClose={() => setSelectedEntry(null)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: theme.cardBackground, height: '85%' }]}>
-                        <View style={styles.modalHeader}>
-                            <View style={styles.modalHeaderBar} />
-                            <Text style={[styles.modalTitle, { color: theme.textColor }]}>Xarid Tafsilotlari</Text>
-                            <TouchableOpacity
-                                onPress={() => setSelectedEntry(null)}
-                                style={styles.modalCloseBtn}
-                            >
-                                <XCircle size={24} color="#94a3b8" />
-                            </TouchableOpacity>
-                        </View>
-
-                        {selectedEntry && (
-                            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-                                <View style={styles.modalSection}>
-                                    <Text style={styles.labelSmall}>Mahsulot</Text>
-                                    <View style={styles.detailRow}>
-                                        <View style={[styles.itemIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
-                                            <PackageIcon size={20} color="#10b981" />
-                                        </View>
-                                        <Text style={[styles.detailValue, { color: theme.textColor }]}>{selectedEntry.mahsulot}</Text>
-                                    </View>
-                                </View>
-
-                                <View style={styles.modalSection}>
-                                    <Text style={styles.labelSmall}>Sotuvchi</Text>
-                                    <View style={styles.detailRow}>
-                                        <View style={[styles.itemIconBox, { backgroundColor: 'rgba(79, 70, 229, 0.1)' }]}>
-                                            <UserIcon size={20} color="#4f46e5" />
-                                        </View>
-                                        <Text style={[styles.detailValue, { color: theme.textColor }]}>{selectedEntry.seller_name}</Text>
-                                    </View>
-                                </View>
-
-                                <View style={styles.gridRow}>
-                                    <View style={styles.gridCol}>
-                                        <Text style={styles.labelSmall}>Miqdori</Text>
-                                        <Text style={[styles.gridValue, { color: theme.textColor }]}>{selectedEntry.miqdor}</Text>
-                                    </View>
-                                    <View style={styles.gridCol}>
-                                        <Text style={styles.labelSmall}>Sana</Text>
-                                        <Text style={[styles.gridValue, { color: theme.textColor }]}>{selectedEntry.sana || 'Bugun'}</Text>
-                                    </View>
-                                </View>
-
-                                <View style={[styles.modalSection, { marginTop: 12 }]}>
-                                    <Text style={styles.labelSmall}>Umumiy Summa</Text>
-                                    <View style={styles.amountBanner}>
-                                        <DollarSign size={24} color="#10b981" />
-                                        <Text style={styles.bannerText}>
-                                            {new Intl.NumberFormat('uz-UZ').format(Number(selectedEntry.summa || '0'))} so'm
-                                        </Text>
-                                    </View>
-                                </View>
-
-                                <View style={styles.modalSection}>
-                                    <Text style={styles.labelSmall}>To'lov Holati</Text>
-                                    <View style={[
-                                        styles.statusBanner,
-                                        { backgroundColor: selectedEntry.holat === "to'langan" ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }
-                                    ]}>
-                                        {selectedEntry.holat === "to'langan" ? (
-                                            <CheckCircle2 size={18} color="#10b981" />
-                                        ) : (
-                                            <Clock size={18} color="#ef4444" />
-                                        )}
-                                        <Text style={[
-                                            styles.statusBannerText,
-                                            { color: selectedEntry.holat === "to'langan" ? '#10b981' : '#ef4444' }
-                                        ]}>
-                                            {selectedEntry.holat === "to'langan" ? "To'langan" : "Qarz (To'lanmagan)"}
-                                        </Text>
-                                    </View>
-                                </View>
-
-                                {/* Request Actions */}
-                                <View style={styles.modalSection}>
-                                    <Text style={[styles.labelSmall, { marginBottom: 12 }]}>So'rovlar</Text>
-                                    <View style={{ gap: 12 }}>
-                                        {pendingUpdate ? (
-                                            <View style={[styles.actionRequestBtn, { opacity: 0.7 }]}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                                    <Clock size={16} color="#f59e0b" />
-                                                    <Text style={[styles.actionRequestText, { color: '#f59e0b' }]}>
-                                                        Holat o'zgarishi kutilmoqda...
-                                                    </Text>
-                                                </View>
-                                            </View>
-                                        ) : (
-                                            <TouchableOpacity
-                                                style={styles.actionRequestBtn}
-                                                onPress={handleChangeStatus}
-                                            >
-                                                <Text style={styles.actionRequestText}>
-                                                    {selectedEntry.holat === "to'langan"
-                                                        ? "Qarz deb belgilash (So'rov)"
-                                                        : "To'langan deb belgilash (So'rov)"}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        )}
-
-                                        {pendingDelete ? (
-                                            <View style={[styles.actionRequestBtn, { backgroundColor: '#fee2e2', opacity: 0.7 }]}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                                    <Clock size={16} color="#f59e0b" />
-                                                    <Text style={[styles.actionRequestText, { color: '#f59e0b' }]}>
-                                                        O'chirish kutilmoqda...
-                                                    </Text>
-                                                </View>
-                                            </View>
-                                        ) : (
-                                            <TouchableOpacity
-                                                style={[styles.actionRequestBtn, { backgroundColor: '#fee2e2' }]}
-                                                onPress={handleDeleteRequest}
-                                            >
-                                                <Text style={[styles.actionRequestText, { color: '#ef4444' }]}>
-                                                    O'chirish so'rovi
-                                                </Text>
-                                            </TouchableOpacity>
-                                        )}
-                                    </View>
-                                </View>
-
-                                <View style={{ height: 20 }} />
-                            </ScrollView>
-                        )}
-
-                        <TouchableOpacity
-                            style={styles.modalConfirmBtn}
-                            onPress={() => setSelectedEntry(null)}
-                        >
-                            <Text style={styles.modalConfirmText}>Yopish</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-        );
-    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.backgroundColor }]}>
@@ -493,7 +497,7 @@ export default function MarketDashboardScreen() {
                             <Text style={[styles.subHeader, { color: theme.labelColor, marginBottom: 0 }]}>
                                 Oxirgi xaridlar ({recentEntries.length})
                             </Text>
-                            <TouchableOpacity onPress={() => marketName && fetchRecentEntries(marketName)}>
+                            <TouchableOpacity onPress={() => marketId && fetchRecentEntries(marketId)}>
                                 <Text style={styles.refreshText}>Yangilash</Text>
                             </TouchableOpacity>
                         </View>
@@ -651,7 +655,15 @@ export default function MarketDashboardScreen() {
                     </View>
                 )}
             </ScrollView>
-            <DetailsModal />
+            <DetailsModal
+                entry={selectedEntry}
+                visible={!!selectedEntry}
+                onClose={() => setSelectedEntry(null)}
+                theme={theme}
+                isDark={isDark}
+                pendingRequests={pendingRequests}
+                requestChange={requestChange}
+            />
         </SafeAreaView >
     );
 }

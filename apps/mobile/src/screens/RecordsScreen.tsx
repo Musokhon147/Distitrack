@@ -279,7 +279,7 @@ export const RecordsScreen = () => {
                 transparent
             >
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     style={styles.modalOverlay}
                 >
                     <View style={styles.modalContent}>
@@ -290,7 +290,10 @@ export const RecordsScreen = () => {
                             </TouchableOpacity>
                         </View>
 
-                        <ScrollView showsVerticalScrollIndicator={false}>
+                        <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                        >
                             <View style={styles.formGroup}>
                                 <Text style={styles.label}>Mahsulot turi</Text>
                                 <TextInput

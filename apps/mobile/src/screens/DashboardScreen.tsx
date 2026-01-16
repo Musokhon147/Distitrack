@@ -166,10 +166,6 @@ export default function DashboardScreen() {
 
     return (
         <View style={styles.container}>
-            {/* Background Decorations disabled */}
-            <View style={[styles.blob, styles.blob1]} />
-            <View style={[styles.blob, styles.blob2]} />
-
             <SafeAreaView style={{ flex: 1 }}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -377,21 +373,19 @@ const styles = StyleSheet.create({
     },
     blob: {
         position: 'absolute',
-        width: 300,
-        height: 300,
-        borderRadius: 150,
-        filter: Platform.OS === 'ios' ? 'blur(60px)' : undefined, // Native blur is better but web-style needs trick
-        opacity: 0.15,
+        width: 400,
+        height: 400,
+        borderRadius: 200,
     },
     blob1: {
-        backgroundColor: '#4f46e5',
-        top: -100,
-        right: -50,
+        top: -150,
+        right: -100,
+        transform: [{ rotate: '45deg' }],
     },
     blob2: {
-        backgroundColor: '#10b981',
-        bottom: 100,
-        left: -100,
+        bottom: -50,
+        left: -150,
+        transform: [{ rotate: '-15deg' }],
     },
     scrollContent: {
         paddingHorizontal: 24,
@@ -450,7 +444,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     glassCard: {
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        backgroundColor: 'rgba(255, 255, 255, 0.6)',
         borderRadius: 32,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.5)',

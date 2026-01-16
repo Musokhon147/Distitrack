@@ -10,7 +10,9 @@ import {
     Dimensions,
     Alert,
     Modal,
-    ActivityIndicator
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -151,41 +153,46 @@ export const ProductsScreen = ({ navigation }: any) => {
                 onRequestClose={() => setIsAddModalVisible(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Yangi mahsulot</Text>
-                            <TouchableOpacity onPress={() => setIsAddModalVisible(false)}>
-                                <X size={24} color="#94a3b8" />
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                        style={{ width: '100%' }}
+                    >
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Yangi mahsulot</Text>
+                                <TouchableOpacity onPress={() => setIsAddModalVisible(false)}>
+                                    <X size={24} color="#94a3b8" />
+                                </TouchableOpacity>
+                            </View>
+
+                            <Text style={styles.label}>Mahsulot nomi</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Masalan: Telefon"
+                                value={newProductName}
+                                onChangeText={setNewProductName}
+                                placeholderTextColor="#94a3b8"
+                                autoFocus
+                            />
+
+                            <TouchableOpacity
+                                style={styles.submitBtn}
+                                onPress={handleAddProduct}
+                                disabled={isSubmitting || !newProductName.trim()}
+                            >
+                                <LinearGradient
+                                    colors={['#6366f1', '#4338ca']}
+                                    style={styles.submitGradient}
+                                >
+                                    {isSubmitting ? (
+                                        <ActivityIndicator color="#fff" />
+                                    ) : (
+                                        <Text style={styles.submitText}>Qo'shish</Text>
+                                    )}
+                                </LinearGradient>
                             </TouchableOpacity>
                         </View>
-
-                        <Text style={styles.label}>Mahsulot nomi</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Masalan: Telefon"
-                            value={newProductName}
-                            onChangeText={setNewProductName}
-                            placeholderTextColor="#94a3b8"
-                            autoFocus
-                        />
-
-                        <TouchableOpacity
-                            style={styles.submitBtn}
-                            onPress={handleAddProduct}
-                            disabled={isSubmitting || !newProductName.trim()}
-                        >
-                            <LinearGradient
-                                colors={['#6366f1', '#4338ca']}
-                                style={styles.submitGradient}
-                            >
-                                {isSubmitting ? (
-                                    <ActivityIndicator color="#fff" />
-                                ) : (
-                                    <Text style={styles.submitText}>Qo'shish</Text>
-                                )}
-                            </LinearGradient>
-                        </TouchableOpacity>
-                    </View>
+                    </KeyboardAvoidingView>
                 </View>
             </Modal>
         </SafeAreaView>

@@ -13,7 +13,8 @@ import {
     useWindowDimensions,
     KeyboardAvoidingView,
     Alert,
-    Modal
+    Modal,
+    ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -294,7 +295,7 @@ export const MarketsScreen = () => {
                 onRequestClose={() => setIsAddModalVisible(false)}
             >
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     style={styles.modalOverlay}
                 >
                     <View style={styles.modalContent}>
@@ -305,79 +306,84 @@ export const MarketsScreen = () => {
                             </TouchableOpacity>
                         </View>
 
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Nomi</Text>
-                            <Controller
-                                control={control}
-                                name="name"
-                                render={({ field: { onChange, value } }) => (
-                                    <TextInput
-                                        style={[styles.input, errors.name && styles.inputError]}
-                                        placeholder="Market nomi"
-                                        value={value}
-                                        onChangeText={onChange}
-                                        placeholderTextColor="#94a3b8"
-                                    />
-                                )}
-                            />
-                            {errors.name && <Text style={styles.errorText}>{errors.name.message}</Text>}
-                        </View>
-
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Telefon</Text>
-                            <Controller
-                                control={control}
-                                name="phone"
-                                render={({ field: { onChange, value } }) => (
-                                    <TextInput
-                                        style={[styles.input, errors.phone && styles.inputError]}
-                                        placeholder="+998"
-                                        value={value}
-                                        onChangeText={onChange}
-                                        keyboardType="phone-pad"
-                                        placeholderTextColor="#94a3b8"
-                                    />
-                                )}
-                            />
-                            {errors.phone && <Text style={styles.errorText}>{errors.phone.message}</Text>}
-                        </View>
-
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Manzil (ixtiyoriy)</Text>
-                            <Controller
-                                control={control}
-                                name="address"
-                                render={({ field: { onChange, value } }) => (
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="Manzil"
-                                        value={value}
-                                        onChangeText={onChange}
-                                        placeholderTextColor="#94a3b8"
-                                    />
-                                )}
-                            />
-                        </View>
-
-                        <TouchableOpacity
-                            style={styles.submitBtn}
-                            onPress={handleSubmit(onAddSubmit)}
-                            disabled={isSubmitting}
+                        <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
                         >
-                            <LinearGradient
-                                colors={['#4f46e5', '#3730a3']}
-                                style={styles.submitGradient}
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>Nomi</Text>
+                                <Controller
+                                    control={control}
+                                    name="name"
+                                    render={({ field: { onChange, value } }) => (
+                                        <TextInput
+                                            style={[styles.input, errors.name && styles.inputError]}
+                                            placeholder="Market nomi"
+                                            value={value}
+                                            onChangeText={onChange}
+                                            placeholderTextColor="#94a3b8"
+                                        />
+                                    )}
+                                />
+                                {errors.name && <Text style={styles.errorText}>{errors.name.message}</Text>}
+                            </View>
+
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>Telefon</Text>
+                                <Controller
+                                    control={control}
+                                    name="phone"
+                                    render={({ field: { onChange, value } }) => (
+                                        <TextInput
+                                            style={[styles.input, errors.phone && styles.inputError]}
+                                            placeholder="+998"
+                                            value={value}
+                                            onChangeText={onChange}
+                                            keyboardType="phone-pad"
+                                            placeholderTextColor="#94a3b8"
+                                        />
+                                    )}
+                                />
+                                {errors.phone && <Text style={styles.errorText}>{errors.phone.message}</Text>}
+                            </View>
+
+                            <View style={styles.formGroup}>
+                                <Text style={styles.label}>Manzil (ixtiyoriy)</Text>
+                                <Controller
+                                    control={control}
+                                    name="address"
+                                    render={({ field: { onChange, value } }) => (
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Manzil"
+                                            value={value}
+                                            onChangeText={onChange}
+                                            placeholderTextColor="#94a3b8"
+                                        />
+                                    )}
+                                />
+                            </View>
+
+                            <TouchableOpacity
+                                style={styles.submitBtn}
+                                onPress={handleSubmit(onAddSubmit)}
+                                disabled={isSubmitting}
                             >
-                                {isSubmitting ? (
-                                    <ActivityIndicator color="#fff" />
-                                ) : (
-                                    <>
-                                        <Plus size={20} color="#fff" />
-                                        <Text style={styles.submitText}>Qo'shish</Text>
-                                    </>
-                                )}
-                            </LinearGradient>
-                        </TouchableOpacity>
+                                <LinearGradient
+                                    colors={['#4f46e5', '#3730a3']}
+                                    style={styles.submitGradient}
+                                >
+                                    {isSubmitting ? (
+                                        <ActivityIndicator color="#fff" />
+                                    ) : (
+                                        <>
+                                            <Plus size={20} color="#fff" />
+                                            <Text style={styles.submitText}>Qo'shish</Text>
+                                        </>
+                                    )}
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </ScrollView>
                     </View>
                 </KeyboardAvoidingView>
             </Modal>

@@ -100,6 +100,7 @@ export const ReportsScreen = () => {
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                contentContainerStyle={{ paddingBottom: vs(160) }}
             >
                 <View style={styles.header}>
                     <View>

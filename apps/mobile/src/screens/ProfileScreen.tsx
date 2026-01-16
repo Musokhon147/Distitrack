@@ -151,7 +151,7 @@ export const ProfileScreen = () => {
             >
                 <ScrollView
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: vs(40) }}
+                    contentContainerStyle={{ paddingBottom: vs(160) }}
                     keyboardShouldPersistTaps="handled"
                 >
                     <View style={styles.header}>

@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
         color: '#1e293b',
     },
     listContainer: {
-        paddingBottom: vs(40),
+        paddingBottom: vs(160),
     },
     marketCard: {
         flexDirection: 'row',

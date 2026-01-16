@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     },
     listContainer: {
         paddingHorizontal: 20,
-        paddingBottom: 20,
+        paddingBottom: 160,
     },
     productCard: {
         flexDirection: 'row',

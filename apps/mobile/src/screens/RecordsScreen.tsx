@@ -16,8 +16,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEntryContext } from '../context/EntryContext';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 import {
     History as HistoryIcon,
     Search as SearchIcon,
@@ -27,7 +25,6 @@ import {
     X as XIcon,
     Calendar as CalendarIcon,
     Package as PackageIcon,
-    Download as DownloadIcon,
     Check as CheckIcon
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -42,7 +39,6 @@ const Edit3 = Edit3Icon as any;
 const X = XIcon as any;
 const Calendar = CalendarIcon as any;
 const Package = PackageIcon as any;
-const Download = DownloadIcon as any;
 
 export const RecordsScreen = () => {
     const { width } = useWindowDimensions();
@@ -89,43 +85,6 @@ export const RecordsScreen = () => {
         );
     };
 
-    const exportToCSV = async () => {
-        if (filteredEntries.length === 0) {
-            Alert.alert('Xatolik', 'Eksport qilish uchun ma\'lumotlar yo\'q');
-            return;
-        }
-
-        try {
-            const header = 'Market,Mahsulot,Miqdori,Narxi,Holati,Sana\n';
-            const rows = filteredEntries.map(e =>
-                `${e.marketNomi},${e.mahsulotTuri},${e.miqdori},${e.narx},${e.tolovHolati},${e.sana}`
-            ).join('\n');
-
-            const csvContent = header + rows;
-            // Use casting to avoid TS errors if types are missing
-            const fileDir = (FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory;
-            if (!fileDir) {
-                Alert.alert('Xatolik', 'Fayl tizimi mavjud emas');
-                return;
-            }
-            const fileUri = `${fileDir}hisobot.csv`;
-
-            await (FileSystem as any).writeAsStringAsync(fileUri, csvContent, { encoding: 'utf8' });
-
-            if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(fileUri, {
-                    mimeType: 'text/csv',
-                    UTI: 'public.comma-separated-values-text',
-                    dialogTitle: 'Hisobotni ulashish'
-                });
-            } else {
-                Alert.alert('Xatolik', 'Ulashish imkoniyati mavjud emas');
-            }
-        } catch (error) {
-            console.error(error);
-            Alert.alert('Xatolik', 'Eksport qilishda xatolik yuz berdi: ' + (error as any).message);
-        }
-    };
 
 
     const renderEntry = ({ item }: { item: Entry }) => {
@@ -239,9 +198,6 @@ export const RecordsScreen = () => {
                     <Text style={styles.headerTitle}>Tarix</Text>
                     <Text style={styles.headerSubtitle}>Barcha yozuvlar ro'yxati</Text>
                 </View>
-                <TouchableOpacity onPress={exportToCSV} style={styles.downloadBtn}>
-                    <Download size={normalize(22)} color="#4f46e5" />
-                </TouchableOpacity>
             </View>
 
             <View style={styles.searchSection}>
@@ -411,16 +367,6 @@ const styles = StyleSheet.create({
         color: '#64748b',
         fontWeight: '500',
     },
-    downloadBtn: {
-        width: s(46),
-        height: s(46),
-        borderRadius: s(14),
-        backgroundColor: '#fff',
-        borderWidth: 1,
-        borderColor: '#f1f5f9',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
     searchSection: {
         flexDirection: 'row',
         paddingHorizontal: s(24),
@@ -461,7 +407,7 @@ const styles = StyleSheet.create({
     },
     listContainer: {
         paddingHorizontal: s(24),
-        paddingBottom: vs(40),
+        paddingBottom: vs(160),
     },
     card: {
         backgroundColor: '#fff',

@@ -11,6 +11,7 @@ import { Products } from './features/products/pages/Products';
 import { ForgotPassword } from './features/auth/pages/ForgotPassword';
 import { ResetPassword } from './features/auth/pages/ResetPassword';
 import { MarketDashboard } from './features/dashboard/MarketDashboard';
+import { AdminDashboard } from './features/dashboard/pages/AdminDashboard';
 import { Navbar } from './components/layout/Navbar';
 import { EntryProvider } from './context/EntryContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -27,42 +28,42 @@ function App() {
     return (
         <ErrorBoundary>
             <ThemeProvider>
-                <Toaster 
-                position="top-center" 
-                richColors 
-                toastOptions={{
-                    className: 'shadow-2xl border border-white/20 backdrop-blur-xl',
-                    style: {
-                        background: 'rgba(255, 255, 255, 0.95)',
-                        backdropFilter: 'blur(12px)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        borderRadius: '16px',
-                    },
-                    classNames: {
-                        toast: 'shadow-2xl',
-                        success: 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800',
-                        error: 'bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-800',
-                        info: 'bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800',
-                    }
-                }}
-            />
-            <AuthProvider>
-                <EntryProvider>
-                    <MarketProvider>
-                        <ProductProvider>
-                            <BrowserRouter>
-                                <AppContent />
-                            </BrowserRouter>
-                        </ProductProvider>
-                    </MarketProvider>
-                </EntryProvider>
-            </AuthProvider>
-        </ThemeProvider>
+                <Toaster
+                    position="top-center"
+                    richColors
+                    toastOptions={{
+                        className: 'shadow-2xl border border-white/20 backdrop-blur-xl',
+                        style: {
+                            background: 'rgba(255, 255, 255, 0.95)',
+                            backdropFilter: 'blur(12px)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '16px',
+                        },
+                        classNames: {
+                            toast: 'shadow-2xl',
+                            success: 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800',
+                            error: 'bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-800',
+                            info: 'bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800',
+                        }
+                    }}
+                />
+                <AuthProvider>
+                    <EntryProvider>
+                        <MarketProvider>
+                            <ProductProvider>
+                                <BrowserRouter>
+                                    <AppContent />
+                                </BrowserRouter>
+                            </ProductProvider>
+                        </MarketProvider>
+                    </EntryProvider>
+                </AuthProvider>
+            </ThemeProvider>
         </ErrorBoundary>
     );
 }
 
-function ProtectedRoute({ children, role }: { children: React.ReactNode, role?: 'seller' | 'market' }) {
+function ProtectedRoute({ children, role }: { children: React.ReactNode, role?: 'seller' | 'market' | 'admin' }) {
     const { isAuthenticated, profile, loading } = useAuth();
 
     if (loading) return null;
@@ -72,7 +73,8 @@ function ProtectedRoute({ children, role }: { children: React.ReactNode, role?: 
     }
 
     if (role && profile && profile.role !== role) {
-        return <Navigate to={profile.role === 'seller' ? '/dashboard' : '/market-dashboard'} replace />;
+        const target = profile.role === 'admin' ? '/admin-dashboard' : (profile.role === 'seller' ? '/dashboard' : '/market-dashboard');
+        return <Navigate to={target} replace />;
     }
 
     return <>{children}</>;
@@ -101,7 +103,7 @@ function AppContent() {
                             path="/"
                             element={
                                 isAuthenticated ? (
-                                    <Navigate to={profile?.role === 'seller' ? '/dashboard' : '/market-dashboard'} replace />
+                                    <Navigate to={profile?.role === 'admin' ? '/admin-dashboard' : (profile?.role === 'seller' ? '/dashboard' : '/market-dashboard')} replace />
                                 ) : (
                                     <Navigate to="/login" replace />
                                 )
@@ -120,6 +122,14 @@ function AppContent() {
                             element={
                                 <ProtectedRoute role="market">
                                     <MarketDashboard />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin-dashboard"
+                            element={
+                                <ProtectedRoute role="admin">
+                                    <AdminDashboard />
                                 </ProtectedRoute>
                             }
                         />

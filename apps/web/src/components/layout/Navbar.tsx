@@ -25,7 +25,7 @@ export const Navbar: React.FC = () => {
                 <div className="flex justify-between items-center h-20">
                     <div className="hidden lg:flex items-center gap-2 sm:gap-6">
                         <NavLink
-                            to="/dashboard"
+                            to={profile?.role === 'admin' ? '/admin-dashboard' : (profile?.role === 'market' ? '/market-dashboard' : '/dashboard')}
                             className={({ isActive }) => `
                             flex items-center gap-2 px-4 py-3 rounded-2xl font-black transition-all text-base
                             ${isActive
@@ -188,7 +188,7 @@ export const Navbar: React.FC = () => {
                     >
                         <div className="flex flex-col p-4 gap-2">
                             <NavLink
-                                to="/dashboard"
+                                to={profile?.role === 'admin' ? '/admin-dashboard' : (profile?.role === 'market' ? '/market-dashboard' : '/dashboard')}
                                 onClick={() => setIsMobileMenuOpen(false)}
                                 className={({ isActive }) => `
                                 flex items-center gap-3 px-5 py-4 rounded-2xl font-black transition-all

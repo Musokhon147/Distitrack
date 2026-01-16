@@ -12,6 +12,9 @@ import {
 import { s, vs, normalize } from '../utils/scaling';
 import { useAuth } from '../context/AuthContext';
 
+import { supabase } from '../lib/supabase';
+import { RefreshControl, ActivityIndicator } from 'react-native';
+
 const AdminStatCard = ({ title, value, icon: Icon, color }: any) => (
     <View style={[styles.statCard, { borderLeftColor: color }]}>
         <View style={styles.statHeader}>
@@ -26,17 +29,80 @@ const AdminStatCard = ({ title, value, icon: Icon, color }: any) => (
 
 export const AdminDashboardScreen = ({ navigation }: any) => {
     const { user, signOut } = useAuth();
+    const [loading, setLoading] = React.useState(true);
+    const [refreshing, setRefreshing] = React.useState(false);
+    const [stats, setStats] = React.useState({
+        sellers: '0',
+        markets: '0',
+        transactions: '0',
+        requests: '0'
+    });
+    const [recentActivity, setRecentActivity] = React.useState<any[]>([]);
+
+    const fetchDashboardData = async () => {
+        try {
+            const [
+                { count: sellerCount },
+                { count: marketCount },
+                { count: entryCount, data: entryData },
+                { count: requestCount }
+            ] = await Promise.all([
+                supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'seller'),
+                supabase.from('markets').select('*', { count: 'exact', head: true }),
+                supabase.from('entries').select('*', { count: 'exact' }).order('created_at', { ascending: false }).limit(5),
+                supabase.from('change_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending')
+            ]);
+
+            setStats({
+                sellers: (sellerCount || 0).toString(),
+                markets: (marketCount || 0).toString(),
+                transactions: (entryCount || 0).toString(),
+                requests: (requestCount || 0).toString()
+            });
+
+            if (entryData) {
+                setRecentActivity(entryData);
+            }
+        } catch (error) {
+            console.error('Error fetching admin data:', error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchDashboardData();
+    };
 
     const sections = [
-        { title: 'Sotuvchilar', count: '12', icon: Users, color: '#4f46e5' },
-        { title: 'Do\'konlar', count: '45', icon: Store, color: '#10b981' },
-        { title: 'Xaridlar', count: '1.2k', icon: TrendingUp, color: '#f59e0b' },
-        { title: 'So\'rovlar', count: '8', icon: AlertCircle, color: '#ef4444' },
+        { title: 'Sotuvchilar', count: stats.sellers, icon: Users, color: '#4f46e5' },
+        { title: 'Do\'konlar', count: stats.markets, icon: Store, color: '#10b981' },
+        { title: 'Xaridlar', count: stats.transactions, icon: TrendingUp, color: '#f59e0b' },
+        { title: 'So\'rovlar', count: stats.requests, icon: AlertCircle, color: '#ef4444' },
     ];
+
+    if (loading && !refreshing) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color="#4f46e5" />
+            </View>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#4f46e5']} />
+                }
+            >
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.headerTitle}>Admin Paneli</Text>
@@ -59,8 +125,10 @@ export const AdminDashboardScreen = ({ navigation }: any) => {
                     ))}
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Boshqaruv</Text>
+                <View style={[styles.section, { marginBottom: vs(24) }]}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Boshqaruv</Text>
+                    </View>
                     <TouchableOpacity
                         style={styles.actionItem}
                         onPress={() => navigation.navigate('Foydalanuvchilar')}
@@ -88,6 +156,36 @@ export const AdminDashboardScreen = ({ navigation }: any) => {
                         </View>
                         <ArrowRight size={20} color="#cbd5e1" />
                     </TouchableOpacity>
+                </View>
+
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Oxirgi harakatlar</Text>
+                    </View>
+                    {recentActivity.length === 0 ? (
+                        <View style={styles.emptyActivity}>
+                            <Text style={styles.emptyText}>Hozircha harakatlar yo'q</Text>
+                        </View>
+                    ) : (
+                        recentActivity.map((item) => (
+                            <View key={item.id} style={styles.activityItem}>
+                                <View style={styles.activityDot} />
+                                <View style={styles.activityInfo}>
+                                    <Text style={styles.activityMain}>
+                                        <Text style={{ fontWeight: '800' }}>{item.client}</Text>
+                                        <Text> uchun </Text>
+                                        <Text style={{ color: '#4f46e5', fontWeight: '700' }}>{item.mahsulot}</Text>
+                                    </Text>
+                                    <Text style={styles.activityTime}>
+                                        {new Date(item.created_at).toLocaleDateString('uz-UZ')}
+                                    </Text>
+                                </View>
+                                <Text style={styles.activityAmount}>
+                                    {new Intl.NumberFormat('uz-UZ').format(item.summa)}
+                                </Text>
+                            </View>
+                        ))
+                    )}
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -204,5 +302,60 @@ const styles = StyleSheet.create({
         fontSize: normalize(12),
         color: '#94a3b8',
         marginTop: vs(2),
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: vs(16),
+    },
+    activityItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        padding: s(16),
+        borderRadius: s(20),
+        marginBottom: vs(12),
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
+    },
+    activityDot: {
+        width: s(8),
+        height: s(8),
+        borderRadius: s(4),
+        backgroundColor: '#4f46e5',
+        marginRight: s(12),
+    },
+    activityInfo: {
+        flex: 1,
+    },
+    activityMain: {
+        fontSize: normalize(14),
+        color: '#1e293b',
+    },
+    activityTime: {
+        fontSize: normalize(12),
+        color: '#94a3b8',
+        marginTop: vs(2),
+    },
+    activityAmount: {
+        fontSize: normalize(16),
+        fontWeight: '800',
+        color: '#1e293b',
+    },
+    emptyActivity: {
+        padding: vs(32),
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#fff',
+        borderRadius: s(24),
+        borderStyle: 'dashed',
+        borderWidth: 1,
+        borderColor: '#cbd5e1',
+    },
+    emptyText: {
+        color: '#94a3b8',
+        fontSize: normalize(14),
+        fontWeight: '500',
     }
 });

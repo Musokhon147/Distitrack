@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 export interface UserProfile {
     id: string;
     full_name: string | null;
-    role: 'seller' | 'market';
+    role: 'seller' | 'market' | 'admin';
     market_id: string | null;
     market_name?: string;
 }
@@ -42,8 +42,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             // Handle markets relation - it might be an array or object
             const marketsData = data.markets as any;
-            const marketName = Array.isArray(marketsData) 
-                ? marketsData[0]?.name 
+            const marketName = Array.isArray(marketsData)
+                ? marketsData[0]?.name
                 : marketsData?.name;
 
             setProfile({
@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }, 5000); // 5 second timeout
 
                 const { data: { session }, error } = await supabase.auth.getSession();
-                
+
                 if (!mounted) return;
 
                 if (error) {

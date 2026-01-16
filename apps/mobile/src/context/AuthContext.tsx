@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 interface AuthContextType {
     session: Session | null;
     user: User | null;
+    userRole: 'seller' | 'market' | 'admin' | null;
     loading: boolean;
     signOut: () => Promise<void>;
 }
@@ -12,6 +13,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
     session: null,
     user: null,
+    userRole: null,
     loading: true,
     signOut: async () => { },
 });
@@ -21,7 +23,20 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [session, setSession] = useState<Session | null>(null);
     const [user, setUser] = useState<User | null>(null);
+    const [userRole, setUserRole] = useState<'seller' | 'market' | 'admin' | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const fetchRole = async (userId: string) => {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .single();
+
+        if (data && !error) {
+            setUserRole(data.role as any);
+        }
+    };
 
     useEffect(() => {
         // Fetch session from storage
@@ -29,15 +44,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const { data: { session } } = await supabase.auth.getSession();
             setSession(session);
             setUser(session?.user ?? null);
+            if (session?.user) {
+                await fetchRole(session.user.id);
+            }
             setLoading(false);
         };
 
         getSession();
 
         // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
+            if (session?.user) {
+                await fetchRole(session.user.id);
+            } else {
+                setUserRole(null);
+            }
             setLoading(false);
         });
 
@@ -53,6 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const value = {
         session,
         user,
+        userRole,
         loading,
         signOut,
     };

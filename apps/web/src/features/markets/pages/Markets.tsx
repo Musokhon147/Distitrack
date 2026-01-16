@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { useMarkets } from '../../../context/MarketContext';
-import { Plus, Trash2, Store, Phone, Search } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
+import { Plus, Trash2, Store, Phone, Search, Calendar, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { PageTransition } from '../../../components/layout/PageTransition';
 
 export const Markets: React.FC = () => {
     const { markets, addMarket, deleteMarket } = useMarkets();
+    const { profile } = useAuth();
     const [newMarket, setNewMarket] = useState({ name: '', phone: '+998' });
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedMarket, setSelectedMarket] = useState<any>(null);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -124,7 +127,8 @@ export const Markets: React.FC = () => {
                                         initial={{ opacity: 0, scale: 0.9 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.9 }}
-                                        className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group relative overflow-hidden"
+                                        onClick={() => setSelectedMarket(market)}
+                                        className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group relative overflow-hidden cursor-pointer"
                                     >
                                         <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-bl-[3rem] -mr-4 -mt-4 transition-transform group-hover:scale-150 duration-500" />
 
@@ -141,12 +145,17 @@ export const Markets: React.FC = () => {
                                                         {market.name.charAt(0).toUpperCase()}
                                                     </div>
                                                 )}
-                                                <button
-                                                    onClick={() => deleteMarket(market.id)}
-                                                    className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
+                                                {profile?.role === 'admin' && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            deleteMarket(market.id);
+                                                        }}
+                                                        className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                )}
                                             </div>
                                             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1 truncate">{market.name}</h3>
                                             <p className="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2 text-sm">
@@ -156,6 +165,86 @@ export const Markets: React.FC = () => {
                                         </div>
                                     </motion.div>
                                 ))}
+                            </AnimatePresence>
+
+                            {/* Market Detail Modal */}
+                            <AnimatePresence>
+                                {selectedMarket && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                                        onClick={() => setSelectedMarket(null)}
+                                    >
+                                        <motion.div
+                                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                                            className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <div className="p-8">
+                                                <div className="flex justify-between items-center mb-8">
+                                                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Market ma'lumotlari</h2>
+                                                    <button
+                                                        onClick={() => setSelectedMarket(null)}
+                                                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-400"
+                                                    >
+                                                        <X size={24} />
+                                                    </button>
+                                                </div>
+
+                                                <div className="space-y-6">
+                                                    <div className="flex items-center gap-4 group">
+                                                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center transition-colors group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50">
+                                                            <Store size={22} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nomi</p>
+                                                            <p className="text-lg font-bold text-slate-700 dark:text-slate-200">{selectedMarket.name}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-4 group">
+                                                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition-colors group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/50">
+                                                            <Phone size={22} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Telefon</p>
+                                                            <p className="text-lg font-bold text-slate-700 dark:text-slate-200">{selectedMarket.phone}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-4 group">
+                                                        <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center transition-colors group-hover:bg-amber-100 dark:group-hover:bg-amber-900/50">
+                                                            <Calendar size={22} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Qo'shilgan sana</p>
+                                                            <p className="text-lg font-bold text-slate-700 dark:text-slate-200">
+                                                                {selectedMarket.created_at
+                                                                    ? new Date(selectedMarket.created_at).toLocaleDateString('uz-UZ', {
+                                                                        day: 'numeric',
+                                                                        month: 'long',
+                                                                        year: 'numeric'
+                                                                    })
+                                                                    : '-'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => setSelectedMarket(null)}
+                                                    className="w-full mt-10 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-slate-200 dark:shadow-none"
+                                                >
+                                                    Yopish
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    </motion.div>
+                                )}
                             </AnimatePresence>
                             {filteredMarkets.length === 0 && (
                                 <motion.div

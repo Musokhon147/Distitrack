@@ -8,6 +8,7 @@ export interface Market {
     phone: string;
     address?: string;
     avatar_url?: string;
+    created_at?: string;
 }
 
 interface MarketContextType {

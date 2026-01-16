@@ -23,6 +23,7 @@ import {
     ChevronRight as ChevronRightIcon,
     Phone as PhoneIcon,
     X as XIcon,
+    Calendar as CalendarIcon,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEntryContext } from '../context/EntryContext';
@@ -30,6 +31,7 @@ import { useMarkets } from '../context/MarketContext';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useAuth } from '../context/AuthContext';
 import { s, vs, normalize } from '../utils/scaling';
 
 const marketSchema = z.object({
@@ -46,6 +48,7 @@ const Store = StoreIcon as any;
 const ChevronRight = ChevronRightIcon as any;
 const Phone = PhoneIcon as any;
 const X = XIcon as any;
+const Calendar = CalendarIcon as any;
 
 interface MarketItemProps {
     item: {
@@ -53,14 +56,21 @@ interface MarketItemProps {
         name: string;
         phone: string;
         avatar_url?: string;
+        created_at?: string;
     };
     index: number;
+    userRole: string | null;
+    onPress: (market: any) => void;
 }
 
-const AnimatedMarketItem = ({ item, index, onDelete }: MarketItemProps & { onDelete: (id: string, name: string) => void }) => {
+const AnimatedMarketItem = ({ item, index, userRole, onDelete, onPress }: MarketItemProps & { onDelete: (id: string, name: string) => void }) => {
     return (
         <View style={{ width: '100%' }}>
-            <TouchableOpacity style={styles.marketCard} activeOpacity={0.7}>
+            <TouchableOpacity
+                style={styles.marketCard}
+                activeOpacity={0.7}
+                onPress={() => onPress(item)}
+            >
                 <View style={styles.marketIconContainer}>
                     {item.avatar_url ? (
                         <Image source={{ uri: item.avatar_url }} style={styles.marketAvatar} />
@@ -83,12 +93,14 @@ const AnimatedMarketItem = ({ item, index, onDelete }: MarketItemProps & { onDel
                 </View>
 
                 <View style={styles.marketMetadata}>
-                    <TouchableOpacity
-                        onPress={() => onDelete(item.id, item.name)}
-                        style={styles.deleteBtn}
-                    >
-                        <X size={16} color="#94a3b8" />
-                    </TouchableOpacity>
+                    {userRole === 'admin' && (
+                        <TouchableOpacity
+                            onPress={() => onDelete(item.id, item.name)}
+                            style={styles.deleteBtn}
+                        >
+                            <X size={16} color="#94a3b8" />
+                        </TouchableOpacity>
+                    )}
                     <ChevronRight size={18} color="#cbd5e1" style={{ marginLeft: s(8) }} />
                 </View>
             </TouchableOpacity>
@@ -98,11 +110,17 @@ const AnimatedMarketItem = ({ item, index, onDelete }: MarketItemProps & { onDel
 
 export const MarketsScreen = () => {
     const { width } = useWindowDimensions();
+    const { userRole } = useAuth();
     const { entries } = useEntryContext();
     const { markets, loading, addMarket, deleteMarket } = useMarkets();
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+    const [selectedMarket, setSelectedMarket] = useState<any>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleMarketPress = (market: any) => {
+        setSelectedMarket(market);
+    };
 
     const { control, handleSubmit, reset, formState: { errors } } = useForm<MarketFormData>({
         resolver: zodResolver(marketSchema),
@@ -193,6 +211,8 @@ export const MarketsScreen = () => {
                     <AnimatedMarketItem
                         item={item as any}
                         index={index}
+                        userRole={userRole}
+                        onPress={handleMarketPress}
                         onDelete={handleDelete}
                     />
                 )}
@@ -208,6 +228,64 @@ export const MarketsScreen = () => {
                     </View>
                 }
             />
+
+            <Modal
+                transparent
+                visible={!!selectedMarket}
+                animationType="fade"
+                onRequestClose={() => setSelectedMarket(null)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setSelectedMarket(null)}
+                >
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Market ma'lumotlari</Text>
+                            <TouchableOpacity onPress={() => setSelectedMarket(null)}>
+                                <X size={24} color="#94a3b8" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {selectedMarket && (
+                            <View style={styles.detailsContent}>
+                                <View style={styles.detailItem}>
+                                    <Store size={20} color="#4f46e5" style={styles.detailIcon} />
+                                    <View>
+                                        <Text style={styles.detailLabel}>Nomi</Text>
+                                        <Text style={styles.detailValue}>{selectedMarket.name}</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.detailItem}>
+                                    <Phone size={20} color="#4f46e5" style={styles.detailIcon} />
+                                    <View>
+                                        <Text style={styles.detailLabel}>Telefon</Text>
+                                        <Text style={styles.detailValue}>{selectedMarket.phone}</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.detailItem}>
+                                    <Calendar size={20} color="#4f46e5" style={styles.detailIcon} />
+                                    <View>
+                                        <Text style={styles.detailLabel}>Qo'shilgan sana</Text>
+                                        <Text style={styles.detailValue}>
+                                            {selectedMarket.created_at
+                                                ? new Date(selectedMarket.created_at).toLocaleDateString('uz-UZ', {
+                                                    day: 'numeric',
+                                                    month: 'long',
+                                                    year: 'numeric'
+                                                })
+                                                : '-'}
+                                        </Text>
+                                    </View>
+                                </View>
+                            </View>
+                        )}
+                    </View>
+                </TouchableOpacity>
+            </Modal>
 
             <Modal
                 transparent
@@ -515,5 +593,33 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: normalize(18),
         fontWeight: '700',
+    },
+    detailsContent: {
+        marginTop: vs(8),
+    },
+    detailItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: vs(12),
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    detailIcon: {
+        marginRight: s(16),
+        backgroundColor: '#f1f5f9',
+        padding: s(10),
+        borderRadius: s(12),
+    },
+    detailLabel: {
+        fontSize: normalize(12),
+        color: '#94a3b8',
+        fontWeight: '600',
+        textTransform: 'uppercase',
+    },
+    detailValue: {
+        fontSize: normalize(16),
+        color: '#1e293b',
+        fontWeight: '700',
+        marginTop: vs(2),
     },
 });

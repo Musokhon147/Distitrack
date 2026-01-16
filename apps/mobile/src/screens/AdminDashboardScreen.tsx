@@ -6,7 +6,7 @@ import {
     Store,
     TrendingUp,
     AlertCircle,
-    Settings as SettingsIcon,
+    LogOut,
     ArrowRight
 } from 'lucide-react-native';
 import { s, vs, normalize } from '../utils/scaling';
@@ -109,7 +109,7 @@ export const AdminDashboardScreen = ({ navigation }: any) => {
                         <Text style={styles.headerSubtitle}>Tizim nazorati</Text>
                     </View>
                     <TouchableOpacity onPress={signOut} style={styles.settingsBtn}>
-                        <SettingsIcon size={24} color="#64748b" />
+                        <LogOut size={24} color="#ef4444" />
                     </TouchableOpacity>
                 </View>
 

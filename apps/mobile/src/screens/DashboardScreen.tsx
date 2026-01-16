@@ -210,7 +210,10 @@ export default function DashboardScreen() {
                                         }} />
                                     )}
                                 </TouchableOpacity>
-                                <TouchableOpacity style={styles.profileBtn}>
+                                <TouchableOpacity
+                                    style={styles.profileBtn}
+                                    onPress={() => navigation.navigate('Profil')}
+                                >
                                     <LinearGradient
                                         colors={['#4f46e5', '#3730a3']}
                                         style={styles.profileGradient}

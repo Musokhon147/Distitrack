@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, Modal, FlatList } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
@@ -179,171 +179,176 @@ export const RegisterScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.content}>
-                    <View style={styles.header}>
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                            <Text style={[styles.backButtonText, { color: themeColor }]}>← Orqaga</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.title}>
-                            {step === 'register' ? "Ro'yxatdan o'tish" : "Emailni tasdiqlash"}
-                        </Text>
-                        <Text style={styles.subtitle}>
-                            {step === 'register'
-                                ? "Yangi hisob yaratish uchun ma'lumotlarni kiriting"
-                                : `${getValues('email')} ga yuborilgan kodni kiriting`}
-                        </Text>
-                    </View>
-
-                    {step === 'register' && (
-                        <View style={styles.roleContainer}>
-                            <TouchableOpacity
-                                style={[
-                                    styles.roleButton,
-                                    selectedRole === 'seller' && { backgroundColor: themeColor }
-                                ]}
-                                onPress={() => setSelectedRole('seller')}
-                            >
-                                <Text style={[styles.roleButtonText, selectedRole === 'seller' && styles.roleButtonTextActive]}>Sotuvchi</Text>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+                <ScrollView contentContainerStyle={styles.scrollContent}>
+                    <View style={styles.content}>
+                        <View style={styles.header}>
+                            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                                <Text style={[styles.backButtonText, { color: themeColor }]}>← Orqaga</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[
-                                    styles.roleButton,
-                                    selectedRole === 'market' && { backgroundColor: themeColor }
-                                ]}
-                                onPress={() => setSelectedRole('market')}
-                            >
-                                <Text style={[styles.roleButtonText, selectedRole === 'market' && styles.roleButtonTextActive]}>Do'kon</Text>
-                            </TouchableOpacity>
+                            <Text style={styles.title}>
+                                {step === 'register' ? "Ro'yxatdan o'tish" : "Emailni tasdiqlash"}
+                            </Text>
+                            <Text style={styles.subtitle}>
+                                {step === 'register'
+                                    ? "Yangi hisob yaratish uchun ma'lumotlarni kiriting"
+                                    : `${getValues('email')} ga yuborilgan kodni kiriting`}
+                            </Text>
                         </View>
-                    )}
 
-                    <View style={styles.form}>
-                        {step === 'register' ? (
-                            <>
-                                <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>To'liq ism</Text>
-                                    <Controller
-                                        control={control}
-                                        name="full_name"
-                                        render={({ field: { onChange, value } }) => (
-                                            <TextInput
-                                                style={[styles.input, errors.full_name && styles.inputError]}
-                                                placeholder="Azizbek Rahimov"
-                                                placeholderTextColor="#94a3b8"
-                                                value={value}
-                                                onChangeText={onChange}
-                                            />
-                                        )}
-                                    />
-                                    {errors.full_name && <Text style={styles.errorText}>{errors.full_name.message}</Text>}
-                                </View>
+                        {step === 'register' && (
+                            <View style={styles.roleContainer}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.roleButton,
+                                        selectedRole === 'seller' && { backgroundColor: themeColor }
+                                    ]}
+                                    onPress={() => setSelectedRole('seller')}
+                                >
+                                    <Text style={[styles.roleButtonText, selectedRole === 'seller' && styles.roleButtonTextActive]}>Sotuvchi</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.roleButton,
+                                        selectedRole === 'market' && { backgroundColor: themeColor }
+                                    ]}
+                                    onPress={() => setSelectedRole('market')}
+                                >
+                                    <Text style={[styles.roleButtonText, selectedRole === 'market' && styles.roleButtonTextActive]}>Do'kon</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
 
-                                <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>Email</Text>
-                                    <Controller
-                                        control={control}
-                                        name="email"
-                                        render={({ field: { onChange, value } }) => (
-                                            <TextInput
-                                                style={[styles.input, errors.email && styles.inputError]}
-                                                placeholder="example@mail.com"
-                                                placeholderTextColor="#94a3b8"
-                                                value={value}
-                                                onChangeText={onChange}
-                                                autoCapitalize="none"
-                                                keyboardType="email-address"
-                                            />
-                                        )}
-                                    />
-                                    {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
-                                </View>
-
-                                <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>Parol</Text>
-                                    <Controller
-                                        control={control}
-                                        name="password"
-                                        render={({ field: { onChange, value } }) => (
-                                            <View style={[styles.inputWrapper, { flexDirection: 'row', alignItems: 'center' }, errors.password && styles.inputError]}>
+                        <View style={styles.form}>
+                            {step === 'register' ? (
+                                <>
+                                    <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>To'liq ism</Text>
+                                        <Controller
+                                            control={control}
+                                            name="full_name"
+                                            render={({ field: { onChange, value } }) => (
                                                 <TextInput
-                                                    style={styles.passwordInput}
-                                                    placeholder="••••••••"
+                                                    style={[styles.input, errors.full_name && styles.inputError]}
+                                                    placeholder="Azizbek Rahimov"
                                                     placeholderTextColor="#94a3b8"
-                                                    secureTextEntry={!showPassword}
                                                     value={value}
                                                     onChangeText={onChange}
                                                 />
-                                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                                                    {showPassword ? <EyeOff size={20} color="#94a3b8" /> : <Eye size={20} color="#94a3b8" />}
-                                                </TouchableOpacity>
-                                            </View>
-                                        )}
-                                    />
-                                    {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
-                                </View>
-
-                                {selectedRole === 'market' && (
-                                    <View style={styles.inputGroup}>
-                                        <Text style={styles.label}>Do'konni tanlang</Text>
-                                        <TouchableOpacity
-                                            style={[styles.input, !selectedMarket && { borderColor: '#f59e0b', borderWidth: 1 }]}
-                                            onPress={() => setIsMarketModalVisible(true)}
-                                        >
-                                            <Text style={{ color: selectedMarket ? '#0f172a' : '#94a3b8' }}>
-                                                {selectedMarket ? selectedMarket.name : "Do'konni tanlang..."}
-                                            </Text>
-                                        </TouchableOpacity>
+                                            )}
+                                        />
+                                        {errors.full_name && <Text style={styles.errorText}>{errors.full_name.message}</Text>}
                                     </View>
-                                )}
 
-                                <TouchableOpacity
-                                    style={[styles.button, { backgroundColor: themeColor }, loading && styles.buttonDisabled]}
-                                    onPress={handleSubmit(onSubmit)}
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <ActivityIndicator color="#fff" />
-                                    ) : (
-                                        <Text style={styles.buttonText}>Davom etish</Text>
+                                    <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>Email</Text>
+                                        <Controller
+                                            control={control}
+                                            name="email"
+                                            render={({ field: { onChange, value } }) => (
+                                                <TextInput
+                                                    style={[styles.input, errors.email && styles.inputError]}
+                                                    placeholder="example@mail.com"
+                                                    placeholderTextColor="#94a3b8"
+                                                    value={value}
+                                                    onChangeText={onChange}
+                                                    autoCapitalize="none"
+                                                    keyboardType="email-address"
+                                                />
+                                            )}
+                                        />
+                                        {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
+                                    </View>
+
+                                    <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>Parol</Text>
+                                        <Controller
+                                            control={control}
+                                            name="password"
+                                            render={({ field: { onChange, value } }) => (
+                                                <View style={[styles.inputWrapper, { flexDirection: 'row', alignItems: 'center' }, errors.password && styles.inputError]}>
+                                                    <TextInput
+                                                        style={styles.passwordInput}
+                                                        placeholder="••••••••"
+                                                        placeholderTextColor="#94a3b8"
+                                                        secureTextEntry={!showPassword}
+                                                        value={value}
+                                                        onChangeText={onChange}
+                                                    />
+                                                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                                                        {showPassword ? <EyeOff size={20} color="#94a3b8" /> : <Eye size={20} color="#94a3b8" />}
+                                                    </TouchableOpacity>
+                                                </View>
+                                            )}
+                                        />
+                                        {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
+                                    </View>
+
+                                    {selectedRole === 'market' && (
+                                        <View style={styles.inputGroup}>
+                                            <Text style={styles.label}>Do'konni tanlang</Text>
+                                            <TouchableOpacity
+                                                style={[styles.input, !selectedMarket && { borderColor: '#f59e0b', borderWidth: 1 }]}
+                                                onPress={() => setIsMarketModalVisible(true)}
+                                            >
+                                                <Text style={{ color: selectedMarket ? '#0f172a' : '#94a3b8' }}>
+                                                    {selectedMarket ? selectedMarket.name : "Do'konni tanlang..."}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
                                     )}
-                                </TouchableOpacity>
-                            </>
-                        ) : (
-                            <>
-                                <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>Tasdiqlash kodi (8 xonali)</Text>
-                                    <TextInput
-                                        style={[styles.input, styles.otpInput]}
-                                        placeholder="12345678"
-                                        placeholderTextColor="#94a3b8"
-                                        value={otpCode}
-                                        onChangeText={setOtpCode}
-                                        keyboardType="number-pad"
-                                        maxLength={8}
-                                    />
-                                </View>
 
-                                <TouchableOpacity
-                                    style={[styles.button, { backgroundColor: themeColor }, loading && styles.buttonDisabled]}
-                                    onPress={handleVerify}
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <ActivityIndicator color="#fff" />
-                                    ) : (
-                                        <Text style={styles.buttonText}>Tasdiqlash</Text>
-                                    )}
-                                </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.button, { backgroundColor: themeColor }, loading && styles.buttonDisabled]}
+                                        onPress={handleSubmit(onSubmit)}
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <ActivityIndicator color="#fff" />
+                                        ) : (
+                                            <Text style={styles.buttonText}>Davom etish</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </>
+                            ) : (
+                                <>
+                                    <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>Tasdiqlash kodi (8 xonali)</Text>
+                                        <TextInput
+                                            style={[styles.input, styles.otpInput]}
+                                            placeholder="12345678"
+                                            placeholderTextColor="#94a3b8"
+                                            value={otpCode}
+                                            onChangeText={setOtpCode}
+                                            keyboardType="number-pad"
+                                            maxLength={8}
+                                        />
+                                    </View>
 
-                                <TouchableOpacity onPress={() => setStep('register')}>
-                                    <Text style={[styles.changeEmailText, { color: themeColor }]}>Emailni o'zgartirish</Text>
-                                </TouchableOpacity>
-                            </>
-                        )}
+                                    <TouchableOpacity
+                                        style={[styles.button, { backgroundColor: themeColor }, loading && styles.buttonDisabled]}
+                                        onPress={handleVerify}
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <ActivityIndicator color="#fff" />
+                                        ) : (
+                                            <Text style={styles.buttonText}>Tasdiqlash</Text>
+                                        )}
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity onPress={() => setStep('register')}>
+                                        <Text style={[styles.changeEmailText, { color: themeColor }]}>Emailni o'zgartirish</Text>
+                                    </TouchableOpacity>
+                                </>
+                            )}
+                        </View>
                     </View>
-                </View>
-            </ScrollView>
+                </ScrollView>
+            </KeyboardAvoidingView>
 
             <Modal
                 visible={isMarketModalVisible}

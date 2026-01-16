@@ -145,100 +145,105 @@ export const ProfileScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" />
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: vs(40) }}>
-                <View style={styles.header}>
-                    <Text style={styles.title}>Profil</Text>
-                    <Text style={styles.subtitle}>Shaxsiy ma'lumotlaringizni boshqaring</Text>
-                </View>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: vs(40) }}>
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Profil</Text>
+                        <Text style={styles.subtitle}>Shaxsiy ma'lumotlaringizni boshqaring</Text>
+                    </View>
 
-                <View style={styles.avatarSection}>
-                    <View style={styles.avatarWrapper}>
-                        {avatarUrl ? (
-                            <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-                        ) : (
+                    <View style={styles.avatarSection}>
+                        <View style={styles.avatarWrapper}>
+                            {avatarUrl ? (
+                                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+                            ) : (
+                                <LinearGradient
+                                    colors={['#4f46e5', '#3730a3']}
+                                    style={styles.avatarPlaceholder}
+                                >
+                                    <User size={normalize(48)} color="#fff" />
+                                </LinearGradient>
+                            )}
+                            <TouchableOpacity style={styles.cameraBtn} onPress={pickImage} disabled={uploading}>
+                                {uploading ? (
+                                    <ActivityIndicator size="small" color="#4f46e5" />
+                                ) : (
+                                    <Camera size={normalize(18)} color="#4f46e5" />
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    <View style={styles.formContainer}>
+                        <Text style={styles.sectionLabel}>Shaxsiy ma'lumotlar</Text>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>To'liq ism</Text>
+                            <View style={styles.inputWrapper}>
+                                <User size={normalize(20)} color="#94a3b8" style={styles.inputIcon} />
+                                <Controller
+                                    control={control}
+                                    name="full_name"
+                                    render={({ field: { onChange, value } }) => (
+                                        <TextInput
+                                            style={styles.input}
+                                            value={value}
+                                            onChangeText={onChange}
+                                            placeholder="To'liq ismingiz"
+                                            placeholderTextColor="#94a3b8"
+                                        />
+                                    )}
+                                />
+                            </View>
+                            {errors.full_name && <Text style={styles.errorText}>{errors.full_name.message}</Text>}
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Email</Text>
+                            <View style={[styles.inputWrapper, styles.inputDisabled]}>
+                                <Mail size={normalize(20)} color="#cbd5e1" style={styles.inputIcon} />
+                                <TextInput
+                                    style={[styles.input, { color: '#94a3b8' }]}
+                                    value={user?.email}
+                                    editable={false}
+                                />
+                            </View>
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.submitBtn}
+                            onPress={handleSubmit(onSubmit)}
+                            disabled={loading}
+                        >
                             <LinearGradient
                                 colors={['#4f46e5', '#3730a3']}
-                                style={styles.avatarPlaceholder}
+                                style={styles.submitGradient}
                             >
-                                <User size={normalize(48)} color="#fff" />
+                                {loading ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <Text style={styles.submitText}>O'zgarishlarni saqlash</Text>
+                                )}
                             </LinearGradient>
-                        )}
-                        <TouchableOpacity style={styles.cameraBtn} onPress={pickImage} disabled={uploading}>
-                            {uploading ? (
-                                <ActivityIndicator size="small" color="#4f46e5" />
-                            ) : (
-                                <Camera size={normalize(18)} color="#4f46e5" />
-                            )}
+                        </TouchableOpacity>
+
+                        <Text style={[styles.sectionLabel, { marginTop: vs(32) }]}>Hisob</Text>
+
+                        <TouchableOpacity style={styles.menuItem} onPress={signOut}>
+                            <View style={styles.menuItemLeft}>
+                                <View style={[styles.menuIconBox, { backgroundColor: '#fef2f2' }]}>
+                                    <LogOut size={normalize(20)} color="#ef4444" />
+                                </View>
+                                <Text style={[styles.menuText, { color: '#ef4444' }]}>Chiqish</Text>
+                            </View>
+                            <ChevronRight size={normalize(20)} color="#cbd5e1" />
                         </TouchableOpacity>
                     </View>
-                </View>
-
-                <View style={styles.formContainer}>
-                    <Text style={styles.sectionLabel}>Shaxsiy ma'lumotlar</Text>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>To'liq ism</Text>
-                        <View style={styles.inputWrapper}>
-                            <User size={normalize(20)} color="#94a3b8" style={styles.inputIcon} />
-                            <Controller
-                                control={control}
-                                name="full_name"
-                                render={({ field: { onChange, value } }) => (
-                                    <TextInput
-                                        style={styles.input}
-                                        value={value}
-                                        onChangeText={onChange}
-                                        placeholder="To'liq ismingiz"
-                                        placeholderTextColor="#94a3b8"
-                                    />
-                                )}
-                            />
-                        </View>
-                        {errors.full_name && <Text style={styles.errorText}>{errors.full_name.message}</Text>}
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Email</Text>
-                        <View style={[styles.inputWrapper, styles.inputDisabled]}>
-                            <Mail size={normalize(20)} color="#cbd5e1" style={styles.inputIcon} />
-                            <TextInput
-                                style={[styles.input, { color: '#94a3b8' }]}
-                                value={user?.email}
-                                editable={false}
-                            />
-                        </View>
-                    </View>
-
-                    <TouchableOpacity
-                        style={styles.submitBtn}
-                        onPress={handleSubmit(onSubmit)}
-                        disabled={loading}
-                    >
-                        <LinearGradient
-                            colors={['#4f46e5', '#3730a3']}
-                            style={styles.submitGradient}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text style={styles.submitText}>O'zgarishlarni saqlash</Text>
-                            )}
-                        </LinearGradient>
-                    </TouchableOpacity>
-
-                    <Text style={[styles.sectionLabel, { marginTop: vs(32) }]}>Hisob</Text>
-
-                    <TouchableOpacity style={styles.menuItem} onPress={signOut}>
-                        <View style={styles.menuItemLeft}>
-                            <View style={[styles.menuIconBox, { backgroundColor: '#fef2f2' }]}>
-                                <LogOut size={normalize(20)} color="#ef4444" />
-                            </View>
-                            <Text style={[styles.menuText, { color: '#ef4444' }]}>Chiqish</Text>
-                        </View>
-                        <ChevronRight size={normalize(20)} color="#cbd5e1" />
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };

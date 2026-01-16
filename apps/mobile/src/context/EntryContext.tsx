@@ -56,65 +56,6 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
-    const fetchEntries = async () => {
-        const { data, error } = await supabase
-            .from('entries')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('Error fetching entries:', error);
-        } else if (data) {
-            const mappedEntries: Entry[] = data.map((row: any) => ({
-                id: row.id,
-                marketNomi: row.client,
-                marketRaqami: row.izoh || '',
-                mahsulotTuri: row.mahsulot,
-                miqdori: row.miqdor,
-                narx: row.narx,
-                tolovHolati: row.holat as any,
-                sana: row.sana,
-                summa: typeof row.summa === 'number' ? row.summa : parseFloat(row.summa) || 0,
-            }));
-            setEntries(mappedEntries);
-        }
-    };
-
-    const fetchPendingRequests = async () => {
-        const { data, error } = await supabase
-            .from('change_requests')
-            .select('*, entry:entries(*)')
-            .eq('status', 'pending');
-
-        if (error) {
-            console.error('Error fetching requests:', error);
-        } else if (data) {
-            // Map the nested entry structure to match the Entry interface if needed
-            // But usually 'entry:entries(*)' returns the object. 
-            // We might need to map the entry fields if they differ from the Entry type expected by the app (snake_case vs camelCase)
-
-            // Let's verify the data structure. The app uses mapped camelCase entries in fetchEntries.
-            // We should probably map the nested entry here too to be consistent.
-
-            const requests = data.map((req: any) => ({
-                ...req,
-                entry: req.entry ? {
-                    id: req.entry.id,
-                    marketNomi: req.entry.client,
-                    marketRaqami: req.entry.izoh || '',
-                    mahsulotTuri: req.entry.mahsulot,
-                    miqdori: req.entry.miqdor,
-                    narx: req.entry.narx,
-                    tolovHolati: req.entry.holat as any,
-                    sana: req.entry.sana,
-                    summa: typeof req.entry.summa === 'number' ? req.entry.summa : parseFloat(req.entry.summa) || 0,
-                } : null
-            })).filter((r: any) => r.entry !== null); // Filter out requests where entry might be null (deleted?)
-
-            setPendingRequests(requests as ChangeRequest[]);
-        }
-    };
-
     const getProfileInfo = async () => {
         if (!user) throw new Error('User not logged in');
         const { data, error } = await supabase
@@ -124,6 +65,80 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             .single();
         if (error || !data) throw new Error('Could not fetch profile info');
         return data;
+    };
+
+    const fetchEntries = async () => {
+        if (!user) return;
+        try {
+            const profile = await getProfileInfo();
+            let query = supabase.from('entries').select('*');
+
+            if (profile.role === 'seller') {
+                query = query.eq('user_id', user.id);
+            } else if (profile.role === 'market') {
+                query = query.eq('market_id', profile.market_id);
+            }
+
+            const { data, error } = await query.order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching entries:', error);
+            } else if (data) {
+                const mappedEntries: Entry[] = data.map((row: any) => ({
+                    id: row.id,
+                    marketNomi: row.client,
+                    marketRaqami: row.izoh || '',
+                    mahsulotTuri: row.mahsulot,
+                    miqdori: row.miqdor,
+                    narx: row.narx,
+                    tolovHolati: row.holat as any,
+                    sana: row.sana,
+                    summa: typeof row.summa === 'number' ? row.summa : parseFloat(row.summa) || 0,
+                }));
+                setEntries(mappedEntries);
+            }
+        } catch (error) {
+            console.error('fetchEntries error:', error);
+        }
+    };
+
+    const fetchPendingRequests = async () => {
+        if (!user) return;
+        try {
+            const profile = await getProfileInfo();
+            let query = supabase.from('change_requests').select('*, entry:entries(*)');
+
+            if (profile.role === 'seller') {
+                query = query.eq('requested_by', user.id);
+            } else if (profile.role === 'market') {
+                query = query.eq('market_id', profile.market_id);
+            }
+
+            const { data, error } = await query.eq('status', 'pending');
+
+            if (error) {
+                console.error('Error fetching requests:', error);
+            } else if (data) {
+                const requests = data.map((req: any) => ({
+                    ...req,
+                    entry: req.entry ? {
+                        id: req.entry.id,
+                        marketNomi: req.entry.client,
+                        marketRaqami: req.entry.izoh || '',
+                        mahsulotTuri: req.entry.mahsulot,
+                        miqdori: req.entry.miqdor,
+                        narx: req.entry.narx,
+                        tolovHolati: req.entry.holat as any,
+                        sana: req.entry.sana,
+                        summa: typeof req.entry.summa === 'number' ? req.entry.summa : parseFloat(req.entry.summa) || 0,
+                    } : null
+                })).filter((r: any) => r.entry !== null);
+
+                setPendingRequests(requests as ChangeRequest[]);
+            }
+        } catch (error) {
+            console.error('fetchPendingRequests error:', error);
+        }
     };
 
     const requestChange = async (
@@ -136,7 +151,6 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const role = profile.role;
             let marketId = profile.market_id;
 
-            // If Seller, we need to find the market_id for this entry
             if (role === 'seller') {
                 const { data: entryData, error: entryError } = await supabase
                     .from('entries')
@@ -145,10 +159,8 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                     .single();
 
                 if (entryError || !entryData) throw new Error('Entry not found');
-
                 marketId = entryData.market_id;
 
-                // Fallback: try to find market by name if market_id is null on entry
                 if (!marketId) {
                     const { data: marketData } = await supabase
                         .from('markets')
@@ -161,14 +173,13 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
             if (!marketId) throw new Error('Market information missing for this entry');
 
-            // Insert Request
             const { error } = await supabase
                 .from('change_requests')
                 .insert([{
                     entry_id: entryId,
                     market_id: marketId,
                     requested_by: user!.id,
-                    request_side: role, // 'seller' or 'market'
+                    request_side: role,
                     request_type: type,
                     new_status: newStatus,
                     status: 'pending'
@@ -184,7 +195,6 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             );
 
             await fetchPendingRequests();
-
         } catch (error: any) {
             console.error('Request change error:', error);
             Alert.alert('Xatolik', error.message || 'So\'rov yuborishda xatolik');
@@ -195,9 +205,17 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (!user) return;
         setLoading(true);
         try {
+            // Find market_id for the given market name
+            const { data: marketData } = await supabase
+                .from('markets')
+                .select('id')
+                .eq('name', entry.marketNomi)
+                .single();
+
             const summa = entry.narx.replace(/[^\d.]/g, '') || '0';
             const dbEntry = {
                 user_id: user.id,
+                market_id: marketData?.id || null, // Include market_id!
                 client: entry.marketNomi,
                 mahsulot: entry.mahsulotTuri,
                 miqdor: entry.miqdori,
@@ -208,16 +226,14 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 sana: new Date().toISOString().split('T')[0]
             };
 
-            const { data, error } = await supabase
+            const { error } = await supabase
                 .from('entries')
-                .insert([dbEntry])
-                .select()
-                .single();
+                .insert([dbEntry]);
 
             if (error) {
                 console.error('Error adding entry:', error);
                 Alert.alert('Xatolik', `Saqlashda xatolik: ${error.message}`);
-            } else if (data) {
+            } else {
                 await fetchEntries();
             }
         } finally {
@@ -228,26 +244,13 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const updateEntry = async (id: string, updatedEntry: Partial<Entry>) => {
         if (!user) return;
 
-        // Check for specific sensitive changes that require approval
-        // 1. Payment Status Change
         if (updatedEntry.tolovHolati) {
             const currentEntry = entries.find(e => e.id === id);
-            // If status is actually changing
             if (currentEntry && currentEntry.tolovHolati !== updatedEntry.tolovHolati) {
-                // Check if it's a sensitive change (Any change to Paid, or Unpaid, usually requires check)
-                // User requirement: "markets can change unpaid to paid... send confirmation"
-                // And "seller... delete... send notification"
-                // Let's protect ALL status changes via workflow for consistency, or just the ones requested.
-                // "market... change unpaid to paid... send confirmation to seller"
-
-                // Let's default to Request for ANY status change to keep it safe and consistent bidirectional
                 await requestChange(id, 'UPDATE_STATUS', updatedEntry.tolovHolati);
-                return; // Stop here, don't do direct update
+                return;
             }
         }
-
-        // Standard update for non-sensitive fields (like notes, or editing typos if allowed)
-        // Note: Adding a check to prevent editing other fields if "Paid" is usually good practice, but keeping simple for now.
 
         const dbUpdate: any = {};
         if (updatedEntry.marketNomi !== undefined) dbUpdate.client = updatedEntry.marketNomi;
@@ -274,7 +277,6 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     const deleteEntry = async (id: string) => {
-        // Instead of immediate delete, we request deletion
         Alert.alert(
             "O'chirishni so'rash",
             "Bu yozuvni o'chirish uchun tasdiq so'rovi yuborilsinmi?",
@@ -295,7 +297,6 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
             const { error } = await supabase.rpc('approve_change_request', { request_id: requestId });
             if (error) throw error;
-
             Alert.alert('Muvaffaqiyat', 'So\'rov tasdiqlandi');
             await refreshEntries();
         } catch (error: any) {
@@ -309,9 +310,7 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 .from('change_requests')
                 .update({ status: 'rejected', reviewed_by: user?.id })
                 .eq('id', requestId);
-
             if (error) throw error;
-
             Alert.alert('Muvaffaqiyat', 'So\'rov rad etildi');
             await refreshEntries();
         } catch (error: any) {

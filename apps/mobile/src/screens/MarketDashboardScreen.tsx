@@ -70,12 +70,13 @@ export default function MarketDashboardScreen() {
     }, [activeTab, marketName]);
 
     const fetchAllMarketEntries = async () => {
+        if (!marketId) return;
         setLoading(true);
         try {
             const { data: entriesData, error } = await supabase
                 .from('entries')
                 .select('*')
-                .eq('client', marketName)
+                .eq('market_id', marketId)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -154,7 +155,7 @@ export default function MarketDashboardScreen() {
 
                 if (market) {
                     setMarketName(market.name);
-                    fetchRecentEntries(market.name);
+                    fetchRecentEntries(profile.market_id);
                 }
             }
         } catch (error) {
@@ -164,12 +165,12 @@ export default function MarketDashboardScreen() {
         }
     };
 
-    const fetchRecentEntries = async (mName: string) => {
+    const fetchRecentEntries = async (mId: string) => {
         try {
             const { data: entriesData, error: entriesError } = await supabase
                 .from('entries')
                 .select('*')
-                .eq('client', mName)
+                .eq('market_id', mId)
                 .order('created_at', { ascending: false })
                 .limit(20);
 

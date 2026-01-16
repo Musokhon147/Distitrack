@@ -58,14 +58,19 @@ export const ReportsScreen = () => {
         fetchProfile();
     }, [user]);
 
-    // Role-based filtering
+    // Data isolation is already handled by EntryContext (and RLS)
     const entries = useMemo(() => {
-        if (!profile) return allEntries;
-        if (profile.role === 'market') {
-            return allEntries.filter(e => e.marketNomi === profile.full_name);
-        }
-        return allEntries; // For sellers, context already filters if RLS is on, else we show all (current behavior)
-    }, [allEntries, profile]);
+        if (!profile || loading) return [];
+        return allEntries;
+    }, [allEntries, profile, loading]);
+
+    if (!profile && loading) {
+        return (
+            <View style={[styles.container, styles.loadingContainer]}>
+                <ActivityIndicator size="large" color="#4f46e5" />
+            </View>
+        );
+    }
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -200,6 +205,10 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f8fafc',
+    },
+    loadingContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     header: {
         paddingHorizontal: s(24),

@@ -72,36 +72,19 @@ export const Auth: React.FC = () => {
 
             if (error) throw error;
 
-            let { data: profileData, error: profileError } = await supabase
+            const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
                 .select('role')
                 .eq('id', authData.user.id)
                 .single();
 
-            if (profileError && profileError.code === 'PGRST116') {
-                const { data: newProfile, error: upsertError } = await supabase
-                    .from('profiles')
-                    .upsert({
-                        id: authData.user.id,
-                        role: selectedRole,
-                        full_name: authData.user.user_metadata?.full_name || 'Foydalanuvchi',
-                    })
-                    .select('role')
-                    .single();
-                if (upsertError) throw upsertError;
-                profileData = newProfile;
-            } else if (profileError || !profileData) {
+            if (profileError || !profileData) {
                 await signOut();
-                throw new Error('Profilingiz topilmadi');
-            }
-
-            if (profileData.role !== selectedRole && profileData.role !== 'admin') {
-                await signOut();
-                throw new Error(`Bu hisob ${selectedRole === 'seller' ? 'do\'kon' : 'sotuvchi'} hisobi.`);
+                throw new Error('Profilingiz topilmadi. Iltimos, admin bilan bog\'laning.');
             }
 
             toast.success('Xush kelibsiz!');
-            const target = profileData.role === 'admin' ? '/admin-dashboard' : (selectedRole === 'seller' ? '/dashboard' : '/market-dashboard');
+            const target = profileData.role === 'admin' ? '/admin-dashboard' : (profileData.role === 'seller' ? '/dashboard' : '/market-dashboard');
             navigate(target);
         } catch (err: any) {
             toast.error(err.message || 'Kirishda xatolik');
@@ -223,29 +206,35 @@ export const Auth: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Role Switcher */}
-                <div className="flex gap-4 mb-8">
-                    {(['seller', 'market'] as const).map((role) => (
-                        <button
-                            key={role}
-                            onClick={() => setSelectedRole(role)}
-                            className={`flex-1 p-4 rounded-[2rem] border transition-all flex flex-col items-center gap-2 ${selectedRole === role
-                                ? `bg-white dark:bg-slate-900 border-${role === 'seller' ? 'indigo' : 'emerald'}-500 shadow-xl`
-                                : 'bg-white/30 dark:bg-slate-900/30 border-transparent text-slate-400'}`}
-                        >
-                            {role === 'seller' ? <UserCircle size={24} /> : <Store size={24} />}
-                            <span className="text-xs font-black uppercase tracking-widest">{role === 'seller' ? 'Sotuvchi' : "Do'kon"}</span>
-                        </button>
-                    ))}
-                </div>
+                {/* Role Switcher - ONLY FOR REGISTER */}
+                {mode === 'register' && (
+                    <div className="flex gap-4 mb-8">
+                        {(['seller', 'market'] as const).map((role) => (
+                            <button
+                                key={role}
+                                onClick={() => setSelectedRole(role)}
+                                className={`flex-1 p-4 rounded-[2rem] border transition-all flex flex-col items-center gap-2 ${selectedRole === role
+                                    ? `bg-white dark:bg-slate-900 border-${role === 'seller' ? 'indigo' : 'emerald'}-500 shadow-xl`
+                                    : 'bg-white/30 dark:bg-slate-900/30 border-transparent text-slate-400'}`}
+                            >
+                                {role === 'seller' ? <UserCircle size={24} /> : <Store size={24} />}
+                                <span className="text-xs font-black uppercase tracking-widest">{role === 'seller' ? 'Sotuvchi' : "Do'kon"}</span>
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 <div className="glass-card rounded-[3rem] p-10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-2xl border border-white/20 shadow-2xl">
                     <div className="text-center mb-10">
-                        <div className={`inline-flex p-5 rounded-3xl bg-gradient-to-br ${config.gradient} text-white shadow-2xl mb-6`}>
-                            {mode === 'verify' ? <CheckCircle2 size={40} /> : config.icon}
+                        <div className={`inline-flex p-5 rounded-3xl bg-gradient-to-br ${mode === 'login' ? 'from-indigo-600 to-purple-600 shadow-indigo-500/30' : config.gradient} text-white shadow-2xl mb-6 shadow-xl`}>
+                            {mode === 'verify' ? <CheckCircle2 size={40} /> : (mode === 'login' ? <UserCircle size={40} /> : config.icon)}
                         </div>
-                        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">{config.title}</h1>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Tizimga kirish uchun malumotlarni kiriting</p>
+                        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">
+                            {mode === 'login' ? 'Xush kelibsiz' : config.title}
+                        </h1>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+                            {mode === 'login' ? 'Tizimga kirish uchun malumotlarni kiriting' : 'Ro\'yxatdan o\'tish uchun malumotlarni kiriting'}
+                        </p>
                     </div>
 
                     <AnimatePresence mode="wait">

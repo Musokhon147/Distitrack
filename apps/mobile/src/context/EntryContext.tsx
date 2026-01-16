@@ -106,10 +106,12 @@ export const EntryProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (!user) return;
         try {
             const profile = await getProfileInfo();
-            let query = supabase.from('change_requests').select('*, entry:entries(*)');
+            // Use !inner to allow filtering on joined table
+            let query = supabase.from('change_requests').select('*, entry:entries!inner(*)');
 
             if (profile.role === 'seller') {
-                query = query.eq('requested_by', user.id);
+                // Filter by the entry's owner so they see requests FROM market too
+                query = query.eq('entry.user_id', user.id);
             } else if (profile.role === 'market') {
                 query = query.eq('market_id', profile.market_id);
             }

@@ -177,11 +177,11 @@ export const RecordsScreen = () => {
                     ) : (
                         <TouchableOpacity
                             onPress={() => handleDelete(item.id, item.marketNomi)}
-                            style={[styles.actionBtn, pendingUpdate && { opacity: 0.5 }]} // Also disable delete if update is pending to avoid conflict
-                            disabled={!!pendingUpdate}
+                            style={[styles.actionBtn, (pendingUpdate || isPaid) && { opacity: 0.5 }]}
+                            disabled={!!pendingUpdate || isPaid}
                         >
-                            <Trash2 size={normalize(18)} color={pendingUpdate ? "#94a3b8" : "#ef4444"} />
-                            <Text style={[styles.actionText, { color: pendingUpdate ? "#94a3b8" : "#ef4444" }]}>O'chirish</Text>
+                            <Trash2 size={normalize(18)} color={(pendingUpdate || isPaid) ? "#94a3b8" : "#ef4444"} />
+                            <Text style={[styles.actionText, { color: (pendingUpdate || isPaid) ? "#94a3b8" : "#ef4444" }]}>O'chirish</Text>
                         </TouchableOpacity>
                     )}
                 </View>

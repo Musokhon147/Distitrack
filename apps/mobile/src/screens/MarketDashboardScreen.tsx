@@ -193,52 +193,56 @@ const DetailsModal = ({ entry, visible, onClose, theme, isDark, pendingRequests,
                             </View>
                         </View>
 
-                        <View style={styles.modalSection}>
-                            <Text style={[styles.labelSmall, { marginBottom: 12 }]}>So'rovlar</Text>
-                            <View style={{ gap: 12 }}>
-                                {pendingUpdate ? (
-                                    <View style={[styles.actionRequestBtn, { opacity: 0.7 }]}>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                            <Clock size={16} color="#f59e0b" />
-                                            <Text style={[styles.actionRequestText, { color: '#f59e0b' }]}>
-                                                Holat o'zgarishi kutilmoqda...
-                                            </Text>
+                        {(entry.holat !== "to'langan" || pendingUpdate || pendingDelete) && (
+                            <View style={styles.modalSection}>
+                                <Text style={[styles.labelSmall, { marginBottom: 12 }]}>So'rovlar</Text>
+                                <View style={{ gap: 12 }}>
+                                    {pendingUpdate ? (
+                                        <View style={[styles.actionRequestBtn, { opacity: 0.7 }]}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                                <Clock size={16} color="#f59e0b" />
+                                                <Text style={[styles.actionRequestText, { color: '#f59e0b' }]}>
+                                                    Holat o'zgarishi kutilmoqda...
+                                                </Text>
+                                            </View>
                                         </View>
-                                    </View>
-                                ) : (
-                                    <TouchableOpacity
-                                        style={styles.actionRequestBtn}
-                                        onPress={handleChangeStatus}
-                                    >
-                                        <Text style={styles.actionRequestText}>
-                                            {entry.holat === "to'langan"
-                                                ? "Qarz deb belgilash (So'rov)"
-                                                : "To'langan deb belgilash (So'rov)"}
-                                        </Text>
-                                    </TouchableOpacity>
-                                )}
+                                    ) : (
+                                        entry.holat !== "to'langan" && (
+                                            <TouchableOpacity
+                                                style={styles.actionRequestBtn}
+                                                onPress={handleChangeStatus}
+                                            >
+                                                <Text style={styles.actionRequestText}>
+                                                    To'langan deb belgilash (So'rov)
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )
+                                    )}
 
-                                {pendingDelete ? (
-                                    <View style={[styles.actionRequestBtn, { backgroundColor: '#fee2e2', opacity: 0.7 }]}>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                            <Clock size={16} color="#f59e0b" />
-                                            <Text style={[styles.actionRequestText, { color: '#f59e0b' }]}>
-                                                O'chirish kutilmoqda...
-                                            </Text>
+                                    {pendingDelete ? (
+                                        <View style={[styles.actionRequestBtn, { backgroundColor: '#fee2e2', opacity: 0.7 }]}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                                <Clock size={16} color="#f59e0b" />
+                                                <Text style={[styles.actionRequestText, { color: '#f59e0b' }]}>
+                                                    O'chirish kutilmoqda...
+                                                </Text>
+                                            </View>
                                         </View>
-                                    </View>
-                                ) : (
-                                    <TouchableOpacity
-                                        style={[styles.actionRequestBtn, { backgroundColor: '#fee2e2' }]}
-                                        onPress={handleDeleteRequest}
-                                    >
-                                        <Text style={[styles.actionRequestText, { color: '#ef4444' }]}>
-                                            O'chirish so'rovi
-                                        </Text>
-                                    </TouchableOpacity>
-                                )}
+                                    ) : (
+                                        entry.holat !== "to'langan" && (
+                                            <TouchableOpacity
+                                                style={[styles.actionRequestBtn, { backgroundColor: '#fee2e2' }]}
+                                                onPress={handleDeleteRequest}
+                                            >
+                                                <Text style={[styles.actionRequestText, { color: '#ef4444' }]}>
+                                                    O'chirish so'rovi
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )
+                                    )}
+                                </View>
                             </View>
-                        </View>
+                        )}
 
                         <View style={{ height: 20 }} />
                     </ScrollView>
@@ -609,44 +613,48 @@ export default function MarketDashboardScreen() {
                                         <View style={{ height: 1, backgroundColor: theme.borderColor, marginVertical: 12 }} />
 
                                         <View style={{ flexDirection: 'row', gap: 10 }}>
-                                            <TouchableOpacity
-                                                style={[styles.actionBtn, { backgroundColor: 'rgba(79, 70, 229, 0.1)' }, pendingUpdate && { opacity: 0.5 }]}
-                                                disabled={!!pendingUpdate}
-                                                onPress={() => {
-                                                    const newStatus = entry.holat === "to'langan" ? "to'lanmagan" : "to'langan";
-                                                    Alert.alert(
-                                                        "Holatni o'zgartirish",
-                                                        `"${newStatus === "to'langan" ? "To'langan" : "Qarz"}" holatiga o'tkazish so'rovini yuborasizmi?`,
-                                                        [
-                                                            { text: "Bekor qilish", style: "cancel" },
-                                                            { text: "Yuborish", onPress: () => requestChange(entry.id, 'UPDATE_STATUS', newStatus) }
-                                                        ]
-                                                    );
-                                                }}
-                                            >
-                                                <Text style={[styles.actionBtnText, { color: '#4f46e5', fontSize: 12 }]}>
-                                                    {pendingUpdate ? "Kutilmoqda..." : entry.holat === "to'langan" ? "Qarzga o'tkazish" : "To'langanga o'tkazish"}
-                                                </Text>
-                                            </TouchableOpacity>
+                                            {entry.holat !== "to'langan" && (
+                                                <>
+                                                    <TouchableOpacity
+                                                        style={[styles.actionBtn, { backgroundColor: 'rgba(79, 70, 229, 0.1)' }, pendingUpdate && { opacity: 0.5 }]}
+                                                        disabled={!!pendingUpdate}
+                                                        onPress={() => {
+                                                            const newStatus = "to'langan"; // Only allow moving to paid
+                                                            Alert.alert(
+                                                                "Holatni o'zgartirish",
+                                                                `"To'langan" holatiga o'tkazish so'rovini yuborasizmi?`,
+                                                                [
+                                                                    { text: "Bekor qilish", style: "cancel" },
+                                                                    { text: "Yuborish", onPress: () => requestChange(entry.id, 'UPDATE_STATUS', newStatus) }
+                                                                ]
+                                                            );
+                                                        }}
+                                                    >
+                                                        <Text style={[styles.actionBtnText, { color: '#4f46e5', fontSize: 12 }]}>
+                                                            {pendingUpdate ? "Kutilmoqda..." : "To'langanga o'tkazish"}
+                                                        </Text>
+                                                    </TouchableOpacity>
 
-                                            <TouchableOpacity
-                                                style={[styles.actionBtn, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }, pendingDelete && { opacity: 0.5 }]}
-                                                disabled={!!pendingDelete}
-                                                onPress={() => {
-                                                    Alert.alert(
-                                                        "O'chirish",
-                                                        "Ushbu yozuvni o'chirish so'rovini yuborasizmi?",
-                                                        [
-                                                            { text: "Bekor qilish", style: "cancel" },
-                                                            { text: "Yuborish", style: 'destructive', onPress: () => requestChange(entry.id, 'DELETE') }
-                                                        ]
-                                                    );
-                                                }}
-                                            >
-                                                <Text style={[styles.actionBtnText, { color: '#ef4444', fontSize: 12 }]}>
-                                                    {pendingDelete ? "Kutilmoqda..." : "O'chirish"}
-                                                </Text>
-                                            </TouchableOpacity>
+                                                    <TouchableOpacity
+                                                        style={[styles.actionBtn, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }, pendingDelete && { opacity: 0.5 }]}
+                                                        disabled={!!pendingDelete}
+                                                        onPress={() => {
+                                                            Alert.alert(
+                                                                "O'chirish",
+                                                                "Ushbu yozuvni o'chirish so'rovini yuborasizmi?",
+                                                                [
+                                                                    { text: "Bekor qilish", style: "cancel" },
+                                                                    { text: "Yuborish", style: 'destructive', onPress: () => requestChange(entry.id, 'DELETE') }
+                                                                ]
+                                                            );
+                                                        }}
+                                                    >
+                                                        <Text style={[styles.actionBtnText, { color: '#ef4444', fontSize: 12 }]}>
+                                                            {pendingDelete ? "Kutilmoqda..." : "O'chirish"}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                </>
+                                            )}
                                         </View>
                                     </View>
                                 );

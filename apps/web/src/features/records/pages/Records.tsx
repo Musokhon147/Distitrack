@@ -63,12 +63,8 @@ const SwipeableRecord: React.FC<SwipeableRecordProps> = ({ children, entry, onEd
         }
 
         if (entry.tolovHolati === "to\'langan") {
-            if (offset < -100 || velocity < -500) {
-                // Allow Swiped Left -> Delete Intent
-                await controls.start({ x: -80 });
-            } else {
-                await controls.start({ x: 0 });
-            }
+            // Prevent swipe actions for paid items
+            await controls.start({ x: 0 });
             return;
         }
 
@@ -93,15 +89,17 @@ const SwipeableRecord: React.FC<SwipeableRecordProps> = ({ children, entry, onEd
                         <Edit3 className="text-primary-600" />
                     </div>
                 )}
-                <div className={`${entry.tolovHolati === "to'lanmagan" ? 'w-1/2' : 'w-full'} bg-red-500/10 flex items-center justify-end pr-6`}>
-                    <Trash2 className="text-red-500" />
-                </div>
+                {entry.tolovHolati !== "to'langan" && (
+                    <div className={`${entry.tolovHolati === "to'lanmagan" ? 'w-1/2' : 'w-full'} bg-red-500/10 flex items-center justify-end pr-6`}>
+                        <Trash2 className="text-red-500" />
+                    </div>
+                )}
             </div>
 
             {/* Foreground Content */}
             <motion.div
                 drag="x"
-                dragConstraints={entry.tolovHolati === "to'lanmagan" ? { left: -100, right: 0 } : { left: -80, right: 0 }}
+                dragConstraints={entry.tolovHolati === "to'langan" ? { left: 0, right: 0 } : (entry.tolovHolati === "to'lanmagan" ? { left: -100, right: 0 } : { left: -80, right: 0 })}
                 animate={controls}
                 onDragEnd={handleDragEnd}
                 className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50 rounded-2xl shadow-sm hover:shadow-md transition-all relative z-10"
